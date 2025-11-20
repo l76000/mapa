@@ -85,6 +85,28 @@ export default function handler(req, res) {
         .popup-content { font-size: 13px; line-height: 1.4; }
         .popup-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .popup-label { font-weight: bold; color: #555; }
+
+        /* DESTINATION MARKER */
+        .destination-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 3px solid white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+        .destination-marker-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50% 50% 50% 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(45deg);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
  
     </style>
 </head>
@@ -119,6 +141,7 @@ export default function handler(req, res) {
         L.control.zoom({ position: 'bottomright' }).addTo(map);
  
         const busLayer = L.layerGroup().addTo(map);
+        const destinationLayer = L.layerGroup().addTo(map);
  
         const BASE_URL = 'https://rt.buslogic.baguette.pirnet.si/beograd/rt.json';
  
@@ -129,14 +152,11 @@ export default function handler(req, res) {
  
         let timeLeft = 0;
  
-        // Istorija za smer
-        let vehicleHistory = {};
- 
         // Mapa boja za smerove
         let directionColorMap = {};
 
-        // Mapa imena stanica
-        let stationNames = {};
+        // Mapa stanica: id -> {name, coords}
+        let stationsMap = {};
  
         // Paleta boja
         const colors = [
@@ -149,20 +169,23 @@ export default function handler(req, res) {
         
         async function loadStations() {
             try {
-                const response = await fetch('/all.json');  // PROMENJENA PUTANJA
+                const response = await fetch('/all.json');
                 if (!response.ok) throw new Error("Greška pri učitavanju stanica");
                 const stations = await response.json();
                 
                 console.log("✅ Učitano stanica:", stations.length);
                 
-                // Kreiramo mapu id -> name
+                // Kreiramo mapu id -> {name, coords}
                 stations.forEach(station => {
-                    if (station.id && station.name) {
-                        stationNames[station.id] = station.name;
+                    if (station.id && station.name && station.coords) {
+                        stationsMap[station.id] = {
+                            name: station.name,
+                            coords: [parseFloat(station.coords[0]), parseFloat(station.coords[1])]
+                        };
                     }
                 });
                 
-                console.log(\`✅ Mapa stationNames ima \${Object.keys(stationNames).length} unosa\`);
+                console.log(\`✅ Mapa stanica ima \${Object.keys(stationsMap).length} unosa\`);
             } catch (error) {
                 console.error("❌ Greška pri učitavanju stanica:", error);
             }
@@ -173,16 +196,13 @@ export default function handler(req, res) {
 
         // ================= FILTERI =================
         
-        // Funkcija koja proverava da li je garažni broj validan (format P12345 ili duži)
         function isValidGarageNumber(label) {
             if (!label || typeof label !== 'string') return false;
             
-            // Ako počinje sa "P", mora imati format P12345 (slovo P + 5 cifara)
             if (label.startsWith('P')) {
-                return label.length >= 6; // P + najmanje 5 cifara
+                return label.length >= 6;
             }
             
-            // Ako ne počinje sa P, smatramo da je validno (drugi tipovi brojeva)
             return true;
         }
  
@@ -191,6 +211,7 @@ export default function handler(req, res) {
         async function osveziPodatke() {
             if (izabraneLinije.length === 0) {
                 busLayer.clearLayers();
+                destinationLayer.clearLayers();
                 startTimer(0); 
                 return;
             }
@@ -234,6 +255,7 @@ export default function handler(req, res) {
  
         function crtajVozila(entiteti) {
             busLayer.clearLayers();
+            destinationLayer.clearLayers();
  
             let tripDestinations = {};
             entiteti.forEach(e => {
@@ -249,7 +271,6 @@ export default function handler(req, res) {
                 if (!e.vehicle || !e.vehicle.position) return false;
                 const routeId = parseInt(e.vehicle.trip.routeId).toString();
                 
-                // NOVI FILTER: Proveravamo da li je vozilo izabrane linije i ima validan garažni broj
                 if (!izabraneLinije.includes(routeId)) return false;
                 
                 const label = e.vehicle.vehicle.label;
@@ -259,7 +280,65 @@ export default function handler(req, res) {
                 
                 return true;
             });
+
+            // Skupi sve jedinstvene destinacije
+            let destinations = new Set();
+            let destinationInfo = {};
  
+            vozila.forEach(v => {
+                const route = parseInt(v.vehicle.trip.routeId).toString();
+                const tripId = v.vehicle.trip.tripId;
+                const destId = tripDestinations[tripId] || "Unknown";
+                
+                const normalizedId = destId.length === 5 ? destId.substring(1) : destId;
+                const uniqueDirKey = \`\${route}_\${destId}\`;
+                
+                if (!directionColorMap[uniqueDirKey]) {
+                    const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
+                    directionColorMap[uniqueDirKey] = colors[nextColorIndex];
+                }
+                
+                destinations.add(destId);
+                destinationInfo[destId] = {
+                    color: directionColorMap[uniqueDirKey],
+                    normalizedId: normalizedId,
+                    route: route
+                };
+            });
+
+            // Crtaj destination markere
+            destinations.forEach(destId => {
+                const info = destinationInfo[destId];
+                const station = stationsMap[info.normalizedId];
+                
+                if (station && station.coords) {
+                    const destHtml = \`
+                        <div class="destination-marker" style="background: \${info.color};">
+                            <div class="destination-marker-inner">📍</div>
+                        </div>
+                    \`;
+                    
+                    const destIcon = L.divIcon({
+                        className: 'destination-icon-container',
+                        html: destHtml,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 24]
+                    });
+                    
+                    const destPopup = \`
+                        <div class="popup-content">
+                            <div class="popup-row"><span class="popup-label">Stanica:</span> <b>\${station.name}</b></div>
+                            <div class="popup-row"><span class="popup-label">ID:</span> \${destId}</div>
+                        </div>
+                    \`;
+                    
+                    L.marker(station.coords, {icon: destIcon})
+                        .bindPopup(destPopup)
+                        .addTo(destinationLayer);
+                }
+            });
+ 
+            // Crtaj vozila sa strelicama ka destinaciji
             vozila.forEach(v => {
                 const id = v.vehicle.vehicle.id || v.id;
                 const label = v.vehicle.vehicle.label;
@@ -270,47 +349,21 @@ export default function handler(req, res) {
                 const lon = v.vehicle.position.longitude;
  
                 const destId = tripDestinations[tripId] || "Unknown";
-                
-                // Probamo različite načine mapiranja
-                let normalizedId = destId;
-                if (typeof destId === 'string' && destId.length === 5) {
-                    normalizedId = destId.substring(1); // Ukloni prvu cifru
-                }
-                
-                let destName = stationNames[normalizedId] || stationNames[destId] || destId;
+                const normalizedId = destId.length === 5 ? destId.substring(1) : destId;
+                const station = stationsMap[normalizedId];
+                const destName = station ? station.name : destId;
                 
                 const uniqueDirKey = \`\${route}_\${destId}\`;
- 
-                if (!directionColorMap[uniqueDirKey]) {
-                    const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
-                    directionColorMap[uniqueDirKey] = colors[nextColorIndex];
-                }
                 const color = directionColorMap[uniqueDirKey];
- 
+
+                // Izračunaj ugao ka destinaciji
                 let rotation = 0;
                 let hasAngle = false;
- 
-                if (vehicleHistory[id]) {
-                    const prev = vehicleHistory[id];
-                    const diffLat = lat - prev.lat;
-                    const diffLon = lon - prev.lon;
-                    const distance = Math.sqrt(diffLat * diffLat + diffLon * diffLon);
- 
-                    if (distance > 0.00001) { 
-                        rotation = calculateBearing(prev.lat, prev.lon, lat, lon);
-                        hasAngle = true;
-                    } else {
-                        rotation = prev.angle;
-                        hasAngle = prev.hasAngle;
-                    }
+
+                if (station && station.coords) {
+                    rotation = calculateBearing(lat, lon, station.coords[0], station.coords[1]);
+                    hasAngle = true;
                 }
- 
-                vehicleHistory[id] = { 
-                    lat: lat, 
-                    lon: lon, 
-                    angle: rotation,
-                    hasAngle: hasAngle 
-                };
  
                 const arrowDisplay = hasAngle ? 'block' : 'none';
  
