@@ -18,11 +18,23 @@ export default function handler(req, res) {
             color: white;
             font-weight: bold;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             border: 2px solid white;
             box-shadow: 0 0 4px rgba(0,0,0,0.5);
             font-size: 12px;
+        }
+        
+        .bus-marker-line {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .bus-marker-vehicle {
+            font-size: 9px;
+            margin-top: 2px;
+            opacity: 0.95;
         }
  
         .marker-red { background-color: #e74c3c; }
@@ -149,6 +161,7 @@ export default function handler(req, res) {
                     var info = entitet.vehicle;
                     var trip = info.trip;
                     var routeNum = parseInt(trip.routeId);
+                    var vehicleLabel = info.vehicle.label;
  
                     var pos = info.position;
                     var lat = parseFloat(pos.latitude);
@@ -163,9 +176,12 @@ export default function handler(req, res) {
  
                     var customIcon = L.divIcon({
                         className: 'custom-div-icon',
-                        html: '<div class="bus-marker ' + markerClass + '" style="width: 30px; height: 30px;">' + routeNum + '</div>',
-                        iconSize: [30, 30],
-                        iconAnchor: [15, 15]
+                        html: '<div class="bus-marker ' + markerClass + '" style="width: 40px; height: 40px;">' + 
+                              '<div class="bus-marker-line">' + routeNum + '</div>' +
+                              '<div class="bus-marker-vehicle">' + vehicleLabel + '</div>' +
+                              '</div>',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
                     });
  
                     var marker = L.marker([lat, lon], {icon: customIcon});
