@@ -327,7 +327,7 @@ export default function handler(req, res) {
                     
                     const destPopup = \`
                         <div class="popup-content">
-                            <div class="popup-row"><span class="popup-label">Stanica:</span> <b>\${station.name}</b></div>
+                            <div class="popup-row"><span class="popup-label">Okretnica:</span> <b>\${station.name}</b></div>
                             <div class="popup-row"><span class="popup-label">ID:</span> \${destId}</div>
                         </div>
                     \`;
