@@ -141,6 +141,21 @@ export default function handler(req, res) {
             '#e67e22', '#1abc9c', '#34495e', '#d35400', '#c0392b',
             '#2980b9', '#8e44ad', '#27ae60', '#f39c12', '#16a085'
         ];
+
+        // ================= FILTERI =================
+        
+        // Funkcija koja proverava da li je garažni broj validan (format P12345 ili duži)
+        function isValidGarageNumber(label) {
+            if (!label || typeof label !== 'string') return false;
+            
+            // Ako počinje sa "P", mora imati format P12345 (slovo P + 5 cifara)
+            if (label.startsWith('P')) {
+                return label.length >= 6; // P + najmanje 5 cifara
+            }
+            
+            // Ako ne počinje sa P, smatramo da je validno (drugi tipovi brojeva)
+            return true;
+        }
  
         // ================= LOGIKA =================
  
@@ -204,7 +219,17 @@ export default function handler(req, res) {
             const vozila = entiteti.filter(e => {
                 if (!e.vehicle || !e.vehicle.position) return false;
                 const routeId = parseInt(e.vehicle.trip.routeId).toString();
-                return izabraneLinije.includes(routeId);
+                
+                // NOVI FILTER: Proveravamo da li je vozilo izabrane linije i ima validan garažni broj
+                if (!izabraneLinije.includes(routeId)) return false;
+                
+                const label = e.vehicle.vehicle.label;
+                if (!isValidGarageNumber(label)) {
+                    console.log(\`Filtrirano vozilo sa garažnim: \${label}\`);
+                    return false;
+                }
+                
+                return true;
             });
  
             vozila.forEach(v => {
