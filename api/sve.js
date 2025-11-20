@@ -93,7 +93,9 @@ export default function handler(req, res) {
  
         var markersLayer = L.layerGroup().addTo(map);
         var sviPodaci = []; 
-        const url = 'https://rt.buslogic.baguette.pirnet.si/beograd/rt.json';
+        
+        // PROMENA: Koristimo proxy endpoint umesto direktnog API-ja
+        const url = '/api/proxy';
  
         function ucitajAutobuse() {
             fetch(url)
@@ -112,7 +114,7 @@ export default function handler(req, res) {
                 .catch(error => {
                     console.error('Greška:', error);
                     document.getElementById('status').innerText = "Greška pri učitavanju!";
-                    alert('CORS Greška ili problem sa linkom. Proverite konzolu.');
+                    alert('Greška pri učitavanju podataka. Proverite konzolu.');
                 });
         }
  
