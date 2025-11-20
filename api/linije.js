@@ -273,54 +273,25 @@ export default function handler(req, res) {
             busLayer.clearLayers();
             destinationLayer.clearLayers();
  
-            let tripDestinations = {};
-            let tripUpdateCounter = {};
+            // NOVA LOGIKA: Mapa po vehicleId umesto po tripId
+            let vehicleDestinations = {};
             
-            // DEBUG: Prebrojimo koliko puta se pojavljuje svaki tripId
             entiteti.forEach(e => {
-                if (e.tripUpdate && e.tripUpdate.trip) {
-                    const tripId = e.tripUpdate.trip.tripId;
-                    tripUpdateCounter[tripId] = (tripUpdateCounter[tripId] || 0) + 1;
-                }
-            });
-            
-            // Prikupi destinacije - UZMI NAJDUŽI NIZU STANICA za isti tripId
-            entiteti.forEach(e => {
-                if (e.tripUpdate && e.tripUpdate.trip && e.tripUpdate.stopTimeUpdate) {
+                if (e.tripUpdate && e.tripUpdate.trip && e.tripUpdate.stopTimeUpdate && e.tripUpdate.vehicle) {
                     const updates = e.tripUpdate.stopTimeUpdate;
-                    const tripId = e.tripUpdate.trip.tripId;
-                    const vehicleId = e.tripUpdate.vehicle?.id;
+                    const vehicleId = e.tripUpdate.vehicle.id;
                     
-                    if (updates.length > 0) {
+                    if (updates.length > 0 && vehicleId) {
                         const lastStopId = updates[updates.length - 1].stopId;
+                        vehicleDestinations[vehicleId] = lastStopId;
                         
-                        // DEBUG za P70618 tripId
-                        if (tripId === '00601_A_RD_2300') {
-                            console.log(\`🔍 TripUpdate za 00601_A_RD_2300:\`);
-                            console.log(\`   Vehicle ID: \${vehicleId}\`);
-                            console.log(\`   Broj stanica: \${updates.length}\`);
-                            console.log(\`   Poslednja stanica: \${lastStopId}\`);
-                        }
-                        
-                        // Ako već postoji tripDestinations za ovaj tripId, uporedi dužine
-                        if (!tripDestinations[tripId]) {
-                            tripDestinations[tripId] = { stopId: lastStopId, length: updates.length };
-                        } else {
-                            // Uzmi onaj sa više stanica (duža ruta = prava destinacija)
-                            if (updates.length > tripDestinations[tripId].length) {
-                                console.log(\`⚠️ Prepravka destinacije za \${tripId}: \${tripDestinations[tripId].stopId} -> \${lastStopId}\`);
-                                tripDestinations[tripId] = { stopId: lastStopId, length: updates.length };
-                            }
+                        // DEBUG
+                        if (vehicleId === 'P70618') {
+                            console.log(\`✅ P70618 destinacija iz tripUpdate: \${lastStopId}\`);
                         }
                     }
                 }
             });
-            
-            // Konvertuj natrag u običnu mapu
-            let finalDestinations = {};
-            for (let tripId in tripDestinations) {
-                finalDestinations[tripId] = tripDestinations[tripId].stopId;
-            }
  
             const vozila = entiteti.filter(e => {
                 if (!e.vehicle || !e.vehicle.position) return false;
@@ -342,18 +313,13 @@ export default function handler(req, res) {
  
             vozila.forEach(v => {
                 const route = normalizeRouteId(v.vehicle.trip.routeId);
-                const tripId = v.vehicle.trip.tripId;
                 const vehicleId = v.vehicle.vehicle.id;
                 
-                const destId = finalDestinations[tripId] || "Unknown";
+                // KLJUČNA PROMENA: Koristi vehicleId umesto tripId
+                const destId = vehicleDestinations[vehicleId] || "Unknown";
                 
                 const normalizedId = normalizeStopId(destId);
                 const uniqueDirKey = \`\${route}_\${destId}\`;
-                
-                // DEBUG
-                if (vehicleId === 'P70618') {
-                    console.log('✅ P70618 - FINALNA destinacija:', destId, '=', stationsMap[normalizedId]?.name);
-                }
                 
                 if (!directionColorMap[uniqueDirKey]) {
                     const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
@@ -405,12 +371,11 @@ export default function handler(req, res) {
                 const id = v.vehicle.vehicle.id || v.id;
                 const label = v.vehicle.vehicle.label;
                 const route = normalizeRouteId(v.vehicle.trip.routeId);
-                const tripId = v.vehicle.trip.tripId;
                 const startTime = v.vehicle.trip.startTime || "N/A";
                 const lat = v.vehicle.position.latitude;
                 const lon = v.vehicle.position.longitude;
  
-                const destId = finalDestinations[tripId] || "Unknown";
+                const destId = vehicleDestinations[id] || "Unknown";
                 const normalizedId = normalizeStopId(destId);
                 const station = stationsMap[normalizedId];
                 const destName = station ? station.name : destId;
