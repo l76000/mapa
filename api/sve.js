@@ -93,6 +93,82 @@ export default function handler(req, res) {
         .refresh-timer strong {
             color: #3498db;
         }
+        
+        /* Stil za karticu pretrage */
+        .search-card {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 999;
+            width: 200px;
+        }
+        
+        .search-card input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .search-card input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .search-results {
+            margin-top: 8px;
+            max-height: 80px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            padding-top: 5px;
+        }
+        
+        .search-results:empty {
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 4px;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .search-result-item strong {
+            color: #3498db;
+        }
+        
+        /* Custom scrollbar za rezultate */
+        .search-results::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .search-results::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .search-results::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .search-results::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
@@ -104,6 +180,11 @@ export default function handler(req, res) {
     
     <div class="refresh-timer">
         Sledeće ažuriranje za: <strong id="timer">65</strong>s
+    </div>
+    
+    <div class="search-card">
+        <input type="text" id="searchInput" placeholder="Pretraži vozilo...">
+        <div id="searchResults" class="search-results"></div>
     </div>
  
     <div id="map"></div>
@@ -119,6 +200,7 @@ export default function handler(req, res) {
  
         var markersLayer = L.layerGroup().addTo(map);
         var sviPodaci = []; 
+        var allMarkers = {}; // Čuvamo sve markere sa njihovim vozilima
         
         const url = '/api/proxy';
         const REFRESH_INTERVAL = 65000; // 65 sekundi
@@ -154,6 +236,7 @@ export default function handler(req, res) {
  
         function nacrtajMarkere() {
             markersLayer.clearLayers();
+            allMarkers = {}; // Resetuj markere
  
             sviPodaci.forEach(entitet => {
                 if (entitet.vehicle && entitet.vehicle.position) {
@@ -192,9 +275,66 @@ export default function handler(req, res) {
                     marker.bindPopup(popupSadrzaj);
  
                     markersLayer.addLayer(marker);
+                    
+                    // Čuvaj marker sa podacima o vozilu
+                    allMarkers[vehicleLabel] = {
+                        marker: marker,
+                        lat: lat,
+                        lon: lon,
+                        routeNum: routeNum,
+                        vehicleLabel: vehicleLabel,
+                        startTime: trip.startTime
+                    };
                 }
             });
         }
+        
+        // Funkcija za pretragu
+        function searchVehicles(query) {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+            
+            if (!query || query.trim() === '') {
+                return;
+            }
+            
+            const searchTerm = query.toLowerCase().trim();
+            const matchedVehicles = [];
+            
+            // Pretraži samo po oznaci vozila
+            for (let vehicleLabel in allMarkers) {
+                if (vehicleLabel.toLowerCase().includes(searchTerm)) {
+                    matchedVehicles.push(allMarkers[vehicleLabel]);
+                }
+            }
+            
+            // Prikaži samo prva 2 rezultata
+            const resultsToShow = matchedVehicles.slice(0, 2);
+            
+            resultsToShow.forEach(vehicle => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.innerHTML = '<strong>Vozilo:</strong> ' + vehicle.vehicleLabel + 
+                                      '<br><small>Linija: ' + vehicle.routeNum + '</small>';
+                
+                resultItem.onclick = function() {
+                    // Centriraj mapu na vozilo
+                    map.setView([vehicle.lat, vehicle.lon], 16);
+                    // Otvori popup
+                    vehicle.marker.openPopup();
+                    // Očisti pretragu
+                    document.getElementById('searchInput').value = '';
+                    resultsContainer.innerHTML = '';
+                };
+                
+                resultsContainer.appendChild(resultItem);
+            });
+        }
+        
+        // Event listener za input polje
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            searchVehicles(e.target.value);
+        });
         
         function startCountdown() {
             // Očisti prethodni countdown ako postoji
