@@ -13,33 +13,46 @@ export default function handler(req, res) {
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
         #map { height: 100vh; width: 100%; }
  
-        .bus-marker {
-            border-radius: 50%;
-            color: white;
-            font-weight: bold;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border: 2px solid white;
-            box-shadow: 0 0 4px rgba(0,0,0,0.5);
-            font-size: 12px;
+        .bus-icon-container { background: none; border: none; }
+        .bus-wrapper { position: relative; width: 50px; height: 56px; transition: all 0.3s ease; }
+ 
+        .bus-circle {
+            width: 32px; height: 32px; border-radius: 50%; 
+            color: white; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 13px;
+            border: 2px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            z-index: 20;
         }
         
-        .bus-marker-line {
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .bus-marker-vehicle {
+        .bus-garage-label {
+            position: absolute; 
+            top: 36px; 
+            left: 50%; 
+            transform: translateX(-50%);
             font-size: 9px;
-            margin-top: 2px;
-            opacity: 0.95;
+            font-weight: bold;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            z-index: 19;
         }
  
-        .marker-red { background-color: #e74c3c; }
-        .marker-blue { background-color: #3498db; }
-        .marker-gray { background-color: #95a5a6; }
+        /* Strelica */
+        .bus-arrow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            transition: transform 0.5s linear;
+        }
+        .arrow-head {
+            width: 0; height: 0; 
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 12px solid #333;
+            position: absolute; top: 0px; left: 50%; transform: translateX(-50%);
+        }
         
         /* Stil za loading karticu */
         .loading-card {
@@ -164,6 +177,11 @@ export default function handler(req, res) {
         .search-results::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        
+        /* POPUP STIL */
+        .popup-content { font-size: 13px; line-height: 1.4; }
+        .popup-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .popup-label { font-weight: bold; color: #555; }
     </style>
 </head>
 <body>
@@ -198,12 +216,71 @@ export default function handler(req, res) {
         var sviPodaci = []; 
         var allMarkers = {}; // Čuvamo sve markere sa njihovim vozilima
         
+        // Mapa boja za smerove
+        var directionColorMap = {};
+        
+        // Mapa stanica: id -> {name, coords}
+        var stationsMap = {};
+        
+        // Paleta boja
+        const colors = [
+            '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#f1c40f', 
+            '#e67e22', '#1abc9c', '#34495e', '#d35400', '#c0392b',
+            '#2980b9', '#8e44ad', '#27ae60', '#f39c12', '#16a085'
+        ];
+        
         const url = '/api/proxy';
         const REFRESH_INTERVAL = 65000; // 65 sekundi
         const COUNTDOWN_START = 65; // Početak odbrojavanja
         var refreshTimer;
         var countdown;
         var remainingSeconds = COUNTDOWN_START;
+        
+        // ================= FUNKCIJA ZA NORMALIZACIJU =================
+        
+        function normalizeStopId(stopId) {
+            if (typeof stopId === 'string' && stopId.length === 5 && stopId.startsWith('2')) {
+                let normalized = stopId.substring(1);
+                normalized = parseInt(normalized, 10).toString();
+                return normalized;
+            }
+            return stopId;
+        }
+
+        function normalizeRouteId(routeId) {
+            if (typeof routeId === 'string') {
+                return parseInt(routeId, 10).toString();
+            }
+            return routeId;
+        }
+        
+        // ================= UČITAVANJE STANICA =================
+        
+        async function loadStations() {
+            try {
+                const response = await fetch('/all.json');
+                if (!response.ok) throw new Error("Greška pri učitavanju stanica");
+                const stations = await response.json();
+                
+                console.log("✅ Učitano stanica:", stations.length);
+                
+                stations.forEach(station => {
+                    if (station.id && station.name && station.coords) {
+                        stationsMap[station.id] = {
+                            name: station.name,
+                            coords: [parseFloat(station.coords[0]), parseFloat(station.coords[1])]
+                        };
+                    }
+                });
+                
+                console.log(\`✅ Mapa stanica ima \${Object.keys(stationsMap).length} unosa\`);
+            } catch (error) {
+                console.error("❌ Greška pri učitavanju stanica:", error);
+            }
+        }
+        
+        // Učitaj stanice pri inicijalizaciji
+        loadStations();
  
         function ucitajAutobuse() {
             // Prikaži loading karticu
@@ -229,10 +306,33 @@ export default function handler(req, res) {
                     alert('Greška pri učitavanju podataka. Proverite konzolu.');
                 });
         }
+        
+        function calculateBearing(startLat, startLng, destLat, destLng) {
+            const y = Math.sin((destLng - startLng) * Math.PI / 180) * Math.cos(destLat * Math.PI / 180);
+            const x = Math.cos(startLat * Math.PI / 180) * Math.sin(destLat * Math.PI / 180) -
+                      Math.sin(startLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * Math.cos((destLng - startLng) * Math.PI / 180);
+            const brng = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+            return brng;
+        }
  
         function nacrtajMarkere() {
             markersLayer.clearLayers();
             allMarkers = {}; // Resetuj markere
+            
+            // NOVA LOGIKA: Mapa po vehicleId umesto po tripId
+            let vehicleDestinations = {};
+            
+            sviPodaci.forEach(e => {
+                if (e.tripUpdate && e.tripUpdate.trip && e.tripUpdate.stopTimeUpdate && e.tripUpdate.vehicle) {
+                    const updates = e.tripUpdate.stopTimeUpdate;
+                    const vehicleId = e.tripUpdate.vehicle.id;
+                    
+                    if (updates.length > 0 && vehicleId) {
+                        const lastStopId = updates[updates.length - 1].stopId;
+                        vehicleDestinations[vehicleId] = lastStopId;
+                    }
+                }
+            });
  
             sviPodaci.forEach(entitet => {
                 if (entitet.vehicle && entitet.vehicle.position) {
@@ -241,33 +341,71 @@ export default function handler(req, res) {
                     var trip = info.trip;
                     var routeNum = parseInt(trip.routeId);
                     var vehicleLabel = info.vehicle.label;
+                    var vehicleId = info.vehicle.id;
  
                     var pos = info.position;
                     var lat = parseFloat(pos.latitude);
                     var lon = parseFloat(pos.longitude);
+                    
+                    // Određivanje destinacije i smera
+                    const destId = vehicleDestinations[vehicleId] || "Unknown";
+                    const normalizedId = normalizeStopId(destId);
+                    const station = stationsMap[normalizedId];
+                    const destName = station ? station.name : destId;
+                    
+                    // Kreiranje jedinstvenog ključa za smer (kombinacija linije i destinacije)
+                    const uniqueDirKey = \`\${routeNum}_\${destId}\`;
+                    
+                    // Dodeli boju za ovaj smer ako već nije dodeljena
+                    if (!directionColorMap[uniqueDirKey]) {
+                        const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
+                        directionColorMap[uniqueDirKey] = colors[nextColorIndex];
+                    }
+                    
+                    const markerColor = directionColorMap[uniqueDirKey];
+                    
+                    // Izračunaj ugao ka destinaciji
+                    let rotation = 0;
+                    let hasAngle = false;
  
-                    var markerClass = 'marker-gray';
-                    if (trip.tripId && trip.tripId.includes('A_RD')) {
-                        markerClass = 'marker-red';
-                    } else if (trip.tripId && trip.tripId.includes('B_RD')) {
-                        markerClass = 'marker-blue';
+                    if (station && station.coords) {
+                        rotation = calculateBearing(lat, lon, station.coords[0], station.coords[1]);
+                        hasAngle = true;
                     }
  
+                    const arrowDisplay = hasAngle ? 'block' : 'none';
+ 
+                    const iconHtml = \`
+                        <div class="bus-wrapper">
+                            <div class="bus-arrow" style="transform: rotate(\${rotation}deg); display: \${arrowDisplay};">
+                                <div class="arrow-head" style="border-bottom-color: \${markerColor}; filter: brightness(0.6);"></div>
+                            </div>
+                            <div class="bus-circle" style="background: \${markerColor};">
+                                \${routeNum}
+                            </div>
+                            <div class="bus-garage-label">\${vehicleLabel}</div>
+                        </div>
+                    \`;
+ 
                     var customIcon = L.divIcon({
-                        className: 'custom-div-icon',
-                        html: '<div class="bus-marker ' + markerClass + '" style="width: 40px; height: 40px;">' + 
-                              '<div class="bus-marker-line">' + routeNum + '</div>' +
-                              '<div class="bus-marker-vehicle">' + vehicleLabel + '</div>' +
-                              '</div>',
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 20]
+                        className: 'bus-icon-container',
+                        html: iconHtml,
+                        iconSize: [50, 56],
+                        iconAnchor: [25, 28]
                     });
  
                     var marker = L.marker([lat, lon], {icon: customIcon});
  
-                    var popupSadrzaj = '<b>Linija:</b> ' + routeNum + '<br>' +
-                                       '<b>Vozilo:</b> ' + info.vehicle.label + '<br>' +
-                                       '<b>Polazak:</b> ' + trip.startTime;
+                    var popupSadrzaj = \`
+                        <div class="popup-content">
+                            <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${routeNum}</b></div>
+                            <div class="popup-row"><span class="popup-label">Vozilo:</span> \${vehicleLabel}</div>
+                            <div class="popup-row"><span class="popup-label">Polazak:</span> \${trip.startTime}</div>
+                            <hr style="margin: 5px 0; border-color:#eee;">
+                            <div class="popup-row"><span class="popup-label">Smer (ide ka):</span> <span style="color:\${markerColor}; font-weight:bold;">\${destName}</span></div>
+                        </div>
+                    \`;
+                    
                     marker.bindPopup(popupSadrzaj);
  
                     markersLayer.addLayer(marker);
@@ -279,7 +417,8 @@ export default function handler(req, res) {
                         lon: lon,
                         routeNum: routeNum,
                         vehicleLabel: vehicleLabel,
-                        startTime: trip.startTime
+                        startTime: trip.startTime,
+                        destName: destName
                     };
                 }
             });
