@@ -98,7 +98,7 @@ export default function handler(req, res) {
         .search-card {
             position: fixed;
             top: 10px;
-            left: 10px;
+            left: 60px;
             background-color: white;
             padding: 10px;
             border-radius: 8px;
@@ -359,7 +359,7 @@ export default function handler(req, res) {
             refreshTimer = setInterval(function() {
                 ucitajAutobuse();
                 startCountdown();
-            }, REFRESH_INTERVAL);
+            }, REFRESHINTERVAL);
         }
  
         // Početno učitavanje
