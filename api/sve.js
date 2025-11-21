@@ -80,7 +80,7 @@ export default function handler(req, res) {
         .control-card {
             position: fixed;
             top: 10px;
-            left: 60px;
+            right: 10px;
             background-color: white;
             padding: 10px;
             border-radius: 8px;
