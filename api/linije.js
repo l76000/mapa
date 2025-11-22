@@ -158,6 +158,9 @@ export default function handler(req, res) {
         // Mapa stanica: id -> {name, coords}
         let stationsMap = {};
  
+        // Mapa naziva linija: routeId -> displayName
+        let routeNamesMap = {};
+ 
         // Paleta boja
         const colors = [
             '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#f1c40f', 
@@ -181,6 +184,11 @@ export default function handler(req, res) {
                 return parseInt(routeId, 10).toString();
             }
             return routeId;
+        }
+
+        function getRouteDisplayName(routeId) {
+            const normalizedId = normalizeRouteId(routeId);
+            return routeNamesMap[normalizedId] || normalizedId;
         }
 
         // ================= UČITAVANJE STANICA =================
@@ -209,6 +217,24 @@ export default function handler(req, res) {
         }
 
         loadStations();
+
+        // ================= UČITAVANJE NAZIVA LINIJA =================
+        
+        async function loadRouteNames() {
+            try {
+                const response = await fetch('/route-mapping.json');
+                if (!response.ok) throw new Error("Greška pri učitavanju naziva linija");
+                const routeMapping = await response.json();
+                
+                console.log("✅ Učitano naziva linija:", Object.keys(routeMapping).length);
+                
+                routeNamesMap = routeMapping;
+            } catch (error) {
+                console.error("❌ Greška pri učitavanju naziva linija:", error);
+            }
+        }
+
+        loadRouteNames();
 
         // ================= FILTERI =================
         
@@ -371,6 +397,7 @@ export default function handler(req, res) {
                 const id = v.vehicle.vehicle.id || v.id;
                 const label = v.vehicle.vehicle.label;
                 const route = normalizeRouteId(v.vehicle.trip.routeId);
+                const routeDisplayName = getRouteDisplayName(v.vehicle.trip.routeId);
                 const startTime = v.vehicle.trip.startTime || "N/A";
                 const lat = v.vehicle.position.latitude;
                 const lon = v.vehicle.position.longitude;
@@ -400,7 +427,7 @@ export default function handler(req, res) {
                             <div class="arrow-head" style="border-bottom-color: \${color}; filter: brightness(0.6);"></div>
                         </div>
                         <div class="bus-circle" style="background: \${color};">
-                            \${route}
+                            \${routeDisplayName}
                         </div>
                         <div class="bus-garage-label">\${label}</div>
                     </div>
@@ -415,7 +442,7 @@ export default function handler(req, res) {
  
                 const popupContent = \`
                     <div class="popup-content">
-                        <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${route}</b></div>
+                        <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${routeDisplayName}</b></div>
                         <div class="popup-row"><span class="popup-label">Garažni:</span> \${label}</div>
                         <hr style="margin: 5px 0; border-color:#eee;">
                         <div class="popup-row"><span class="popup-label">Polazak:</span> <b>\${startTime}</b></div>
@@ -465,9 +492,10 @@ export default function handler(req, res) {
             const ul = document.getElementById('activeLines');
             ul.innerHTML = '';
             izabraneLinije.forEach((l) => {
+                const displayName = getRouteDisplayName(l);
                 ul.innerHTML += \`
                     <li class="line-item">
-                        <span>Linija \${l}</span>
+                        <span>Linija \${displayName}</span>
                         <span class="remove-btn" onclick="ukloniLiniju('\${l}')">&times;</span>
                     </li>\`;
             });

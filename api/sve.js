@@ -222,6 +222,9 @@ export default function handler(req, res) {
         // Mapa stanica: id -> {name, coords}
         var stationsMap = {};
         
+        // Mapa naziva linija: routeId -> displayName
+        var routeNamesMap = {};
+        
         // Paleta boja
         const colors = [
             '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#f1c40f', 
@@ -252,6 +255,11 @@ export default function handler(req, res) {
                 return parseInt(routeId, 10).toString();
             }
             return routeId;
+        }
+
+        function getRouteDisplayName(routeId) {
+            const normalizedId = normalizeRouteId(routeId);
+            return routeNamesMap[normalizedId] || normalizedId;
         }
         
         // ================= FILTER ZA GARAŽNE BROJEVE =================
@@ -293,6 +301,24 @@ export default function handler(req, res) {
         
         // Učitaj stanice pri inicijalizaciji
         loadStations();
+ 
+        // ================= UČITAVANJE NAZIVA LINIJA =================
+        
+        async function loadRouteNames() {
+            try {
+                const response = await fetch('/route-mapping.json');
+                if (!response.ok) throw new Error("Greška pri učitavanju naziva linija");
+                const routeMapping = await response.json();
+                
+                console.log("✅ Učitano naziva linija:", Object.keys(routeMapping).length);
+                
+                routeNamesMap = routeMapping;
+            } catch (error) {
+                console.error("❌ Greška pri učitavanju naziva linija:", error);
+            }
+        }
+
+        loadRouteNames();
  
         function ucitajAutobuse() {
             // Prikaži loading karticu
@@ -352,6 +378,7 @@ export default function handler(req, res) {
                     var info = entitet.vehicle;
                     var trip = info.trip;
                     var routeNum = parseInt(trip.routeId);
+                    var routeDisplayName = getRouteDisplayName(trip.routeId);
                     var vehicleLabel = info.vehicle.label;
                     var vehicleId = info.vehicle.id;
                     
@@ -398,7 +425,7 @@ export default function handler(req, res) {
                                 <div class="arrow-head" style="border-bottom-color: \${markerColor}; filter: brightness(0.6);"></div>
                             </div>
                             <div class="bus-circle" style="background: \${markerColor};">
-                                \${routeNum}
+                                \${routeDisplayName}
                             </div>
                             <div class="bus-garage-label">\${vehicleLabel}</div>
                         </div>
@@ -415,7 +442,7 @@ export default function handler(req, res) {
  
                     var popupSadrzaj = \`
                         <div class="popup-content">
-                            <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${routeNum}</b></div>
+                            <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${routeDisplayName}</b></div>
                             <div class="popup-row"><span class="popup-label">Vozilo:</span> \${vehicleLabel}</div>
                             <div class="popup-row"><span class="popup-label">Polazak:</span> \${trip.startTime}</div>
                             <hr style="margin: 5px 0; border-color:#eee;">
@@ -433,6 +460,7 @@ export default function handler(req, res) {
                         lat: lat,
                         lon: lon,
                         routeNum: routeNum,
+                        routeDisplayName: routeDisplayName,
                         vehicleLabel: vehicleLabel,
                         startTime: trip.startTime,
                         destName: destName
@@ -467,7 +495,7 @@ export default function handler(req, res) {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'search-result-item';
                 resultItem.innerHTML = '<strong>Vozilo:</strong> ' + vehicle.vehicleLabel + 
-                                      '<br><small>Linija: ' + vehicle.routeNum + '</small>';
+                                      '<br><small>Linija: ' + vehicle.routeDisplayName + '</small>';
                 
                 resultItem.onclick = function() {
                     // Centriraj mapu na vozilo
