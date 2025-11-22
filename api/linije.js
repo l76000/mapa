@@ -222,9 +222,9 @@ export default function handler(req, res) {
                 const response = await fetch('/api/stations');
                 if (!response.ok) throw new Error("Greška pri učitavanju stanica");
                 stationsMap = await response.json();
-                console.log(\`✅ Učitano stanica: \${Object.keys(stationsMap).length}\`);
+                console.log(\` Učitano stanica: \${Object.keys(stationsMap).length}\`);
             } catch (error) {
-                console.error("❌ Greška pri učitavanju stanica:", error);
+                console.error(" Greška pri učitavanju stanica:", error);
             }
         }
 
@@ -301,13 +301,13 @@ export default function handler(req, res) {
             busLayer.clearLayers();
             destinationLayer.clearLayers();
  
-            // Filtriraj vozila po izabranim linijama
+           
             const vozila = vehicles.filter(v => {
                 const routeId = normalizeRouteId(v.routeId);
                 return izabraneLinije.includes(routeId);
             });
 
-            // Skupi sve jedinstvene destinacije
+  
             let destinations = new Set();
             let destinationInfo = {};
  
@@ -333,7 +333,7 @@ export default function handler(req, res) {
                 };
             });
 
-            // Crtaj destination markere
+     
             destinations.forEach(destId => {
                 const info = destinationInfo[destId];
                 const station = stationsMap[info.normalizedId];
@@ -365,7 +365,7 @@ export default function handler(req, res) {
                 }
             });
  
-            // Crtaj vozila sa strelicama ka destinaciji
+
             vozila.forEach(v => {
                 const id = v.id;
                 const label = v.label;
@@ -449,7 +449,7 @@ export default function handler(req, res) {
                 return; 
             }
             
-            // Pronađi API ID koristeći novu funkciju
+
             const routeId = findRouteId(val);
             if (!routeId) {
                 alert(\`Linija "\${val}" nije pronađena! Pokušaj sa drugim nazivom.\`);
