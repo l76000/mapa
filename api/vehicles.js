@@ -1,16 +1,22 @@
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   res.setHeader('Content-Type', 'application/json');
 
   try {
+    // Dobij linije iz query parametara (npr. /api/vehicles?lines=31,32,33)
+    const linesParam = req.query.lines;
+    let selectedLines = null;
+    
+    if (linesParam) {
+      selectedLines = linesParam.split(',').map(l => l.trim());
+    }
+
     const timestamp = Date.now();
     const randomSalt = Math.random().toString(36).substring(2, 15);
     const BASE_URL = 'https://rt.buslogic.baguette.pirnet.si/beograd/rt.json';
     const targetUrl = `${BASE_URL}?_=${timestamp}&salt=${randomSalt}`;
 
-    // Fetch data from external API
     const response = await fetch(targetUrl, {
       method: 'GET',
       headers: {
@@ -29,7 +35,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ vehicles: [], tripUpdates: [] });
     }
 
-    // Filter and process vehicles
     const vehicles = [];
     const tripUpdates = [];
 
@@ -38,10 +43,16 @@ export default async function handler(req, res) {
       if (entitet.vehicle && entitet.vehicle.position) {
         const info = entitet.vehicle;
         const vehicleLabel = info.vehicle.label;
+        const routeId = normalizeRouteId(info.trip.routeId);
 
         // Filter invalid garage numbers (server-side filtering!)
         if (!isValidGarageNumber(vehicleLabel)) {
-          return; // Skip this vehicle
+          return;
+        }
+
+        // Filter by selected lines if provided
+        if (selectedLines && !selectedLines.includes(routeId)) {
+          return;
         }
 
         vehicles.push({
@@ -54,7 +65,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Process trip updates for destinations
+      // Process trip updates
       if (entitet.tripUpdate && entitet.tripUpdate.trip && 
           entitet.tripUpdate.stopTimeUpdate && entitet.tripUpdate.vehicle) {
         const updates = entitet.tripUpdate.stopTimeUpdate;
@@ -70,7 +81,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // Return processed data
     res.status(200).json({
       vehicles: vehicles,
       tripUpdates: tripUpdates,
@@ -86,7 +96,14 @@ export default async function handler(req, res) {
   }
 }
 
-// Server-side validation function (hidden from client!)
+// Server-side helper functions (HIDDEN from client!)
+function normalizeRouteId(routeId) {
+  if (typeof routeId === 'string') {
+    return parseInt(routeId, 10).toString();
+  }
+  return routeId;
+}
+
 function isValidGarageNumber(label) {
   if (!label || typeof label !== 'string') return false;
   
