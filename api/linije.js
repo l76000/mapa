@@ -389,13 +389,13 @@ export default function handler(req, res) {
                                 fillOpacity: 0.9
                             }).addTo(stopsLayer);
 
-                            marker.bindPopup(`
+                            marker.bindPopup(\`
                                 <div class="popup-content">
-                                    <div class="popup-row"><b>${stopInfo.stop_name}</b></div>
-                                    <div class="popup-row">Smer: ${dir === '0' ? 'A' : 'B'}</div>
-                                    <div class="popup-row">ID: ${stopInfo.stop_id}</div>
+                                    <div class="popup-row"><b>\${stopInfo.stop_name}</b></div>
+                                    <div class="popup-row">Smer: \${dir === '0' ? 'A' : 'B'}</div>
+                                    <div class="popup-row">ID: \${stopInfo.stop_id}</div>
                                 </div>
-                            `);
+                            \`);
                         }
                     });
                 }
@@ -425,15 +425,15 @@ export default function handler(req, res) {
                     if(v === l.id) displayName = k;
                 }
 
-                ul.innerHTML += `
-                    <li class="line-item" style="border-left: 5px solid ${l.colorDir0};">
+                ul.innerHTML += \`
+                    <li class="line-item" style="border-left: 5px solid \${l.colorDir0};">
                         <span>
-                           Linija ${l.userInput} 
-                           <span style="font-size:10px; color:${l.colorDir0}">●</span>
-                           <span style="font-size:10px; color:${l.colorDir1}">●</span>
+                           Linija \${l.userInput} 
+                           <span style="font-size:10px; color:\${l.colorDir0}">●</span>
+                           <span style="font-size:10px; color:\${l.colorDir1}">●</span>
                         </span>
-                        <span class="remove-btn" onclick="ukloniLiniju('${l.id}')">&times;</span>
-                    </li>`;
+                        <span class="remove-btn" onclick="ukloniLiniju('\${l.id}')">&times;</span>
+                    </li>\`;
             });
         }
 
@@ -477,7 +477,7 @@ export default function handler(req, res) {
                 if (data && data.vehicles) {
                     crtajVozila(data.vehicles, data.tripUpdates || []);
                     const timeStr = new Date().toLocaleTimeString();
-                    document.getElementById('statusText').innerHTML = `Ažurirano: <b>${timeStr}</b>`;
+                    document.getElementById('statusText').innerHTML = \`Ažurirano: <b>\${timeStr}</b>\`;
                 }
             } catch (error) {
                 document.getElementById('statusText').innerText = "Greška u osvežavanju.";
@@ -517,17 +517,17 @@ export default function handler(req, res) {
                 // Using simple logic, if we have bearing in GTFS-RT use it (often field is 'bearing')
                 if(v.bearing) rotation = v.bearing;
 
-                const iconHtml = `
+                const iconHtml = \`
                     <div class="bus-wrapper">
-                        <div class="bus-arrow" style="transform: rotate(${rotation}deg);">
-                            <div class="arrow-head" style="border-bottom-color: ${color};"></div>
+                        <div class="bus-arrow" style="transform: rotate(\${rotation}deg);">
+                            <div class="arrow-head" style="border-bottom-color: \${color};"></div>
                         </div>
-                        <div class="bus-circle" style="background: ${color};">
-                            ${lineObj.userInput}
+                        <div class="bus-circle" style="background: \${color};">
+                            \${lineObj.userInput}
                         </div>
-                        <div class="bus-garage-label">${v.label}</div>
+                        <div class="bus-garage-label">\${v.label}</div>
                     </div>
-                `;
+                \`;
 
                 const icon = L.divIcon({
                     className: 'bus-icon-container',
@@ -536,13 +536,13 @@ export default function handler(req, res) {
                     iconAnchor: [25, 28]
                 });
 
-                const popup = `
+                const popup = \`
                     <div class="popup-content">
-                        <div class="popup-row"><span class="popup-label">Linija:</span> <b>${lineObj.userInput}</b></div>
-                        <div class="popup-row"><span class="popup-label">Garažni:</span> ${v.label}</div>
-                        <div class="popup-row"><span class="popup-label">Brzina:</span> ${speed !== null ? speed + ' km/h' : '?'}</div>
+                        <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${lineObj.userInput}</b></div>
+                        <div class="popup-row"><span class="popup-label">Garažni:</span> \${v.label}</div>
+                        <div class="popup-row"><span class="popup-label">Brzina:</span> \${speed !== null ? speed + ' km/h' : '?'}</div>
                     </div>
-                `;
+                \`;
 
                 L.marker([v.lat, v.lon], {icon: icon}).bindPopup(popup).addTo(busLayer);
             });
