@@ -444,8 +444,8 @@ export default function handler(req, res) {
             const val = input.value.trim();
 
             if (!val) return;
-            if (izabraneLinije.length >= 5) { 
-                alert("Maksimalno 5 linija!"); 
+            if (izabraneLinije.length >= 10) { 
+                alert("Maksimalno 10 linija!"); 
                 return; 
             }
             
