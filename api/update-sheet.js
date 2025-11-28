@@ -50,7 +50,7 @@ export default async function handler(req, res) {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    // Pripremi podatke
+    // Kreiraj timestamp za datum i vreme
     const timestamp = new Date().toLocaleString('sr-RS', { 
       timeZone: 'Europe/Belgrade',
       year: 'numeric',
@@ -61,88 +61,126 @@ export default async function handler(req, res) {
       second: '2-digit'
     });
 
-    const rows = vehicles.map(v => [
-      v.vehicleLabel || '',
-      v.routeDisplayName || '',
-      v.startTime || '',
-      v.destName || '',
-      timestamp
-    ]);
-
-    console.log(`Prepared ${rows.length} rows for update`);
-
-    // PROMENA: Koristi Sheet1 umesto BazaVozila
     const sheetName = 'Sheet1';
 
-    // Očisti postojeće podatke
+    // Prvo pročitaj postojeće podatke
+    let existingData = [];
     try {
-      await sheets.spreadsheets.values.clear({
+      const readResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A2:E`,
+        range: `${sheetName}!A2:F`,
       });
-      console.log('Cleared existing data');
-    } catch (clearError) {
-      console.error('Clear error:', clearError.message);
-      return res.status(500).json({
-        error: 'Failed to clear sheet',
-        details: clearError.message
-      });
+      existingData = readResponse.data.values || [];
+      console.log(`Found ${existingData.length} existing rows`);
+    } catch (readError) {
+      console.log('No existing data or read error:', readError.message);
     }
 
-    // Upiši nove podatke
-    try {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${sheetName}!A2`,
-        valueInputOption: 'RAW',
-        resource: {
-          values: rows,
-        },
-      });
-      console.log('Data updated successfully');
-    } catch (updateError) {
-      console.error('Update error:', updateError.message);
-      return res.status(500).json({
-        error: 'Failed to update sheet',
-        details: updateError.message
-      });
+    // Kreiraj mapu postojećih vozila (vozilo -> row index)
+    const existingVehicles = new Map();
+    existingData.forEach((row, index) => {
+      if (row[0]) { // Ako postoji broj vozila
+        existingVehicles.set(row[0], {
+          rowIndex: index + 2, // +2 jer počinje od A2
+          data: row
+        });
+      }
+    });
+
+    let newCount = 0;
+    let updateCount = 0;
+
+    // Proces svako vozilo
+    for (const v of vehicles) {
+      const vehicleLabel = v.vehicleLabel || '';
+      const rowData = [
+        vehicleLabel,
+        v.routeDisplayName || '',
+        v.startTime || '',
+        v.destName || '',
+        timestamp,  // Kolona E - vreme upisa
+        timestamp.split(',')[0].trim()  // Kolona F - samo datum
+      ];
+
+      if (existingVehicles.has(vehicleLabel)) {
+        // AŽURIRAJ postojeći red
+        const existingRow = existingVehicles.get(vehicleLabel);
+        try {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range: `${sheetName}!A${existingRow.rowIndex}:F${existingRow.rowIndex}`,
+            valueInputOption: 'RAW',
+            resource: {
+              values: [rowData]
+            }
+          });
+          updateCount++;
+          console.log(`Updated vehicle ${vehicleLabel} at row ${existingRow.rowIndex}`);
+        } catch (updateError) {
+          console.error(`Error updating ${vehicleLabel}:`, updateError.message);
+        }
+      } else {
+        // DODAJ novi red
+        try {
+          await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: `${sheetName}!A2`,
+            valueInputOption: 'RAW',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+              values: [rowData]
+            }
+          });
+          newCount++;
+          console.log(`Added new vehicle ${vehicleLabel}`);
+          
+          // Dodaj u mapu da ne dodamo duplikat u istom batch-u
+          existingVehicles.set(vehicleLabel, { rowIndex: -1, data: rowData });
+        } catch (appendError) {
+          console.error(`Error adding ${vehicleLabel}:`, appendError.message);
+        }
+      }
     }
 
     // Pokušaj sortiranje (opcionalno)
-    try {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        resource: {
-          requests: [
-            {
-              sortRange: {
-                range: {
-                  sheetId: 0,
-                  startRowIndex: 1,
-                  startColumnIndex: 0,
-                  endColumnIndex: 5,
-                },
-                sortSpecs: [
-                  {
-                    dimensionIndex: 0,
-                    sortOrder: 'ASCENDING',
+    if (newCount > 0) {
+      try {
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          resource: {
+            requests: [
+              {
+                sortRange: {
+                  range: {
+                    sheetId: 0,
+                    startRowIndex: 1,
+                    startColumnIndex: 0,
+                    endColumnIndex: 6,
                   },
-                ],
+                  sortSpecs: [
+                    {
+                      dimensionIndex: 0, // Sortiraj po vozilu
+                      sortOrder: 'ASCENDING',
+                    },
+                  ],
+                },
               },
-            },
-          ],
-        },
-      });
-      console.log('Data sorted successfully');
-    } catch (sortError) {
-      console.warn('Sort error (non-critical):', sortError.message);
+            ],
+          },
+        });
+        console.log('Data sorted successfully');
+      } catch (sortError) {
+        console.warn('Sort error (non-critical):', sortError.message);
+      }
     }
 
     console.log('=== Update Complete ===');
 
     res.status(200).json({ 
       success: true, 
-      updated: rows.length,
+      newVehicles: newCount,
+      updatedVehicles: updateCount,
+      totalProcessed: vehicles.length,
       timestamp,
       sheetUsed: sheetName
     });
