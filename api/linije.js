@@ -142,7 +142,7 @@ export default function handler(req, res) {
  
         const busLayer = L.layerGroup().addTo(map);
         const destinationLayer = L.layerGroup().addTo(map);
-        const routeLayer = L.layerGroup().addTo(map); // NEW: Layer for route shapes
+        const routeLayer = L.layerGroup().addTo(map);
  
         let izabraneLinije = [];
         let timerId = null;
@@ -160,7 +160,6 @@ export default function handler(req, res) {
 
         let routeNamesMap = {};
 
-        // NEW: Store shapes data
         let shapesData = {};
         let vehicleShapeMap = {};
  
@@ -254,7 +253,6 @@ export default function handler(req, res) {
         loadRouteNames();
 
 
-        // NEW: Load shapes data
         async function loadShapes() {
             try {
                 const [shapesResponse, shapesGradskeResponse] = await Promise.all([
@@ -307,9 +305,7 @@ export default function handler(req, res) {
 
         loadShapes();
 
-// Helper function to pad route ID with zeros (for shape matching)
         function padRouteId(routeId) {
-            // Only pad if it's a simple numeric ID with 1-3 digits
             const numericId = parseInt(routeId, 10);
             if (!isNaN(numericId) && routeId === numericId.toString() && routeId.length <= 3) {
                 return numericId.toString().padStart(5, '0');
@@ -317,7 +313,6 @@ export default function handler(req, res) {
             return routeId;
         }
 
-        // NEW: Show all routes for selected lines
         function drawAllRoutes() {
             routeLayer.clearLayers();
             
@@ -326,7 +321,6 @@ export default function handler(req, res) {
             let allBounds = [];
             
             izabraneLinije.forEach(routeId => {
-                // Try both original and padded route ID
                 const paddedRouteId = padRouteId(routeId);
                 let matchingShapes = [];
                 
@@ -338,7 +332,6 @@ export default function handler(req, res) {
                 
                 console.log(\`Route \${routeId} (padded: \${paddedRouteId}): found \${matchingShapes.length} shapes\`);
                 
-                // Group shapes by direction (last part of destination)
                 matchingShapes.forEach((shapeKey) => {
                     const shapePoints = shapesData[shapeKey];
                     
@@ -346,15 +339,12 @@ export default function handler(req, res) {
                     
                     const latLngs = shapePoints.map(point => [point.lat, point.lon]);
                     
-                    // Extract destination from shape key (format: routeId_destination)
                     const shapeParts = shapeKey.split('_');
                     const shapeDestination = shapeParts.length > 1 ? shapeParts[1] : '';
                     
-                    // Find matching direction color from directionColorMap
                     const uniqueDirKey = \`\${routeId}_\${shapeDestination}\`;
                     let shapeColor = directionColorMap[uniqueDirKey];
                     
-                    // If no exact match, try to find any direction for this route
                     if (!shapeColor) {
                         for (let dirKey in directionColorMap) {
                             if (dirKey.startsWith(routeId + '_')) {
@@ -364,7 +354,6 @@ export default function handler(req, res) {
                         }
                     }
                     
-                    // Fallback to default blue if no color found
                     if (!shapeColor) {
                         shapeColor = '#2980b9';
                     }
@@ -378,12 +367,10 @@ export default function handler(req, res) {
                     
                     polyline.addTo(routeLayer);
                     
-                    // Collect bounds
                     allBounds.push(polyline.getBounds());
                 });
             });
             
-            // Fit map to show all routes
             if (allBounds.length > 0) {
                 const combinedBounds = allBounds.reduce((acc, bounds) => {
                     return acc.extend(bounds);
@@ -401,7 +388,7 @@ export default function handler(req, res) {
             if (izabraneLinije.length === 0) {
                 busLayer.clearLayers();
                 destinationLayer.clearLayers();
-                routeLayer.clearLayers(); // NEW: Clear routes
+                routeLayer.clearLayers();
                 startTimer(0); 
                 return;
             }
@@ -435,26 +422,26 @@ export default function handler(req, res) {
                             vehicleShapeMap[update.vehicleId] = update.shapeId;
                         }
                     });
-
-                                  // PRVO: Popuni directionColorMap
-                    const vozila = vehicles.filter(v => {
-                          const routeId = normalizeRouteId(v.routeId);
-                          return izabraneLinije.includes(routeId);
-                      });
-              
-                    vozila.forEach(v => {
-                          const route = normalizeRouteId(v.routeId);
-                          const vehicleId = v.id;
-                          const destId = vehicleDestinations[vehicleId] || "Unknown";
-                          const uniqueDirKey = `${route}_${destId}`;
-                          
-                         if (!directionColorMap[uniqueDirKey]) {
-                              const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
-                              directionColorMap[uniqueDirKey] = colors[nextColorIndex];
-                          }
-                      });
                     
-                    // NEW: Draw routes first, then vehicles on top
+                    // PRVO: Popuni directionColorMap
+                    const vozila = data.vehicles.filter(v => {
+                        const routeId = normalizeRouteId(v.routeId);
+                        return izabraneLinije.includes(routeId);
+                    });
+
+                    vozila.forEach(v => {
+                        const route = normalizeRouteId(v.routeId);
+                        const vehicleId = v.id;
+                        const destId = vehicleDestinations[vehicleId] || "Unknown";
+                        const uniqueDirKey = \`\${route}_\${destId}\`;
+                        
+                        if (!directionColorMap[uniqueDirKey]) {
+                            const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
+                            directionColorMap[uniqueDirKey] = colors[nextColorIndex];
+                        }
+                    });
+                    
+                    // ZATIM: Crtaj rute sa popunjenim bojama
                     drawAllRoutes();
                     crtajVozila(data.vehicles, vehicleDestinations);
                     
@@ -494,14 +481,12 @@ export default function handler(req, res) {
                 const normalizedId = normalizeStopId(destId);
                 const uniqueDirKey = \`\${route}_\${destId}\`;
                 
-                if (!directionColorMap[uniqueDirKey]) {
-                    const nextColorIndex = Object.keys(directionColorMap).length % colors.length;
-                    directionColorMap[uniqueDirKey] = colors[nextColorIndex];
-                }
+                // Boja je već dodeljena u osveziPodatke(), samo je preuzimamo
+                const color = directionColorMap[uniqueDirKey];
                 
                 destinations.add(destId);
                 destinationInfo[destId] = {
-                    color: directionColorMap[uniqueDirKey],
+                    color: color,
                     normalizedId: normalizedId,
                     route: route
                 };
