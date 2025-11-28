@@ -307,7 +307,7 @@ export default function handler(req, res) {
 
         loadShapes();
 
-       // Helper function to pad route ID with zeros (for shape matching)
+// Helper function to pad route ID with zeros (for shape matching)
         function padRouteId(routeId) {
             // Only pad if it's a simple numeric ID with 1-3 digits
             const numericId = parseInt(routeId, 10);
