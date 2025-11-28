@@ -142,6 +142,7 @@ export default function handler(req, res) {
  
         const busLayer = L.layerGroup().addTo(map);
         const destinationLayer = L.layerGroup().addTo(map);
+        const routeLayer = L.layerGroup().addTo(map); // NEW: Layer for route shapes
  
         let izabraneLinije = [];
         let timerId = null;
@@ -159,11 +160,9 @@ export default function handler(req, res) {
 
         let routeNamesMap = {};
 
-        // NEW: Store shapes data and vehicle info
+        // NEW: Store shapes data
         let shapesData = {};
         let vehicleShapeMap = {};
-        let allVehicles = {};
-        let activeRouteLayer = null;
  
 
         const colors = [
@@ -308,65 +307,62 @@ export default function handler(req, res) {
 
         loadShapes();
 
-        // NEW: Show route for vehicle
-        function showRouteForVehicle(routeId, vehicleId, color) {
-            if (activeRouteLayer) {
-                map.removeLayer(activeRouteLayer);
-                activeRouteLayer = null;
-            }
+        // NEW: Show all routes for selected lines
+        function drawAllRoutes() {
+            routeLayer.clearLayers();
             
-            const shapeIdFromVehicle = vehicleShapeMap[vehicleId];
+            if (izabraneLinije.length === 0) return;
             
-            console.log('Vehicle ID:', vehicleId);
-            console.log('Route ID:', routeId);
-            console.log('Shape ID from vehicle:', shapeIdFromVehicle);
+            let allBounds = [];
             
-            let matchingShapes = [];
-            
-            for (let shapeKey in shapesData) {
-                if (shapeKey.startsWith(routeId + '_')) {
-                    matchingShapes.push(shapeKey);
+            izabraneLinije.forEach(routeId => {
+                // Find all shapes for this route
+                let matchingShapes = [];
+                
+                for (let shapeKey in shapesData) {
+                    if (shapeKey.startsWith(routeId + '_')) {
+                        matchingShapes.push(shapeKey);
+                    }
                 }
-            }
-            
-            console.log('Matching shapes for route', routeId, ':', matchingShapes);
-            
-            if (matchingShapes.length === 0) {
-                console.log('No shapes found for route:', routeId);
-                return;
-            }
-            
-            let selectedShape = null;
-            if (shapeIdFromVehicle && shapesData[shapeIdFromVehicle]) {
-                selectedShape = shapeIdFromVehicle;
-            } else {
-                selectedShape = matchingShapes[0];
-            }
-            
-            const shapePoints = shapesData[selectedShape];
-            
-            if (!shapePoints || shapePoints.length === 0) {
-                console.log('No shape points found for:', selectedShape);
-                return;
-            }
-            
-            const latLngs = shapePoints.map(point => [point.lat, point.lon]);
-            
-            const polyline = L.polyline(latLngs, {
-                color: color,
-                weight: 4,
-                opacity: 0.7,
-                smoothFactor: 1
+                
+                console.log(\`Route \${routeId}: found \${matchingShapes.length} shapes\`);
+                
+                // Draw each shape (direction) with different opacity
+                matchingShapes.forEach((shapeKey, index) => {
+                    const shapePoints = shapesData[shapeKey];
+                    
+                    if (!shapePoints || shapePoints.length === 0) return;
+                    
+                    const latLngs = shapePoints.map(point => [point.lat, point.lon]);
+                    
+                    // Use different colors/styles for different directions
+                    const baseColor = '#2980b9';
+                    const opacity = 0.6 - (index * 0.15); // Different opacity for each direction
+                    
+                    const polyline = L.polyline(latLngs, {
+                        color: baseColor,
+                        weight: 4,
+                        opacity: Math.max(opacity, 0.3),
+                        smoothFactor: 1
+                    });
+                    
+                    polyline.addTo(routeLayer);
+                    
+                    // Collect bounds
+                    allBounds.push(polyline.getBounds());
+                });
             });
             
-            polyline.addTo(map);
-            activeRouteLayer = polyline;
-            
-            map.fitBounds(polyline.getBounds(), {
-                padding: [50, 50]
-            });
-            
-            console.log('✓ Route displayed:', selectedShape, 'with', shapePoints.length, 'points');
+            // Fit map to show all routes
+            if (allBounds.length > 0) {
+                const combinedBounds = allBounds.reduce((acc, bounds) => {
+                    return acc.extend(bounds);
+                }, allBounds[0]);
+                
+                map.fitBounds(combinedBounds, {
+                    padding: [50, 50]
+                });
+            }
         }
  
 
@@ -375,6 +371,7 @@ export default function handler(req, res) {
             if (izabraneLinije.length === 0) {
                 busLayer.clearLayers();
                 destinationLayer.clearLayers();
+                routeLayer.clearLayers(); // NEW: Clear routes
                 startTimer(0); 
                 return;
             }
@@ -400,7 +397,7 @@ export default function handler(req, res) {
                 if (data && data.vehicles) {
 
                     const vehicleDestinations = {};
-                    vehicleShapeMap = {}; // NEW: Reset shape map
+                    vehicleShapeMap = {};
                     
                     data.tripUpdates.forEach(update => {
                         vehicleDestinations[update.vehicleId] = update.destination;
@@ -409,7 +406,10 @@ export default function handler(req, res) {
                         }
                     });
                     
+                    // NEW: Draw routes first, then vehicles on top
+                    drawAllRoutes();
                     crtajVozila(data.vehicles, vehicleDestinations);
+                    
                     const timeStr = new Date().toLocaleTimeString();
                     document.getElementById('statusText').innerHTML = \`Ažurirano: <b>\${timeStr}</b>\`;
                     document.getElementById('statusText').style.color = "#27ae60";
@@ -426,7 +426,6 @@ export default function handler(req, res) {
         function crtajVozila(vehicles, vehicleDestinations) {
             busLayer.clearLayers();
             destinationLayer.clearLayers();
-            allVehicles = {}; // NEW: Reset vehicles map
  
            
             const vozila = vehicles.filter(v => {
@@ -509,12 +508,6 @@ export default function handler(req, res) {
                 
                 const uniqueDirKey = \`\${route}_\${destId}\`;
                 const color = directionColorMap[uniqueDirKey];
-
-                // NEW: Store vehicle info
-                allVehicles[id] = {
-                    routeId: v.routeId,
-                    color: color
-                };
  
                 let rotation = 0;
                 let hasAngle = false;
@@ -555,15 +548,9 @@ export default function handler(req, res) {
                     </div>
                 \`;
  
-                const marker = L.marker([lat, lon], {icon: icon})
-                    .bindPopup(popupContent);
-
-                // NEW: Add click event to show route
-                marker.on('click', function() {
-                    showRouteForVehicle(v.routeId, id, color);
-                });
-
-                marker.addTo(busLayer);
+                L.marker([lat, lon], {icon: icon})
+                    .bindPopup(popupContent)
+                    .addTo(busLayer);
             });
         }
  
@@ -612,13 +599,6 @@ export default function handler(req, res) {
         function ukloniLiniju(linija) {
             izabraneLinije = izabraneLinije.filter(l => l !== linija);
             azurirajListu();
-            
-            // NEW: Clear route when removing line
-            if (activeRouteLayer) {
-                map.removeLayer(activeRouteLayer);
-                activeRouteLayer = null;
-            }
-            
             osveziPodatke();
         }
  
