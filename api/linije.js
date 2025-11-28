@@ -313,7 +313,7 @@ export default function handler(req, res) {
             return routeId;
         }
 
-       function drawAllRoutes(shapeToColorMap = {}) {
+function drawAllRoutes(shapeToColorMap = {}) {
             routeLayer.clearLayers();
             
             if (izabraneLinije.length === 0) return;
