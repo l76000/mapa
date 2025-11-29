@@ -61,7 +61,6 @@ export default async function handler(req, res) {
       second: '2-digit'
     });
 
-    // KLJUČNA PROMENA: Uvek koristi sheet "Baza"
     const sheetName = 'Baza';
     console.log(`Target sheet: ${sheetName}`);
 
@@ -238,33 +237,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Sortiranje
-    try {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        resource: {
-          requests: [{
-            sortRange: {
-              range: {
-                sheetId: sheetId,
-                startRowIndex: 1,
-                startColumnIndex: 0,
-                endColumnIndex: 6,
-              },
-              sortSpecs: [{
-                dimensionIndex: 0,
-                sortOrder: 'ASCENDING',
-              }],
-            },
-          }],
-        },
-      });
-      console.log('✓ Data sorted successfully');
-    } catch (sortError) {
-      console.warn('Sort error (non-critical):', sortError.message);
-    }
-
-    console.log('=== Update Complete ===');
+    console.log('=== Update Complete (No Auto-Sort) ===');
 
     res.status(200).json({ 
       success: true, 
