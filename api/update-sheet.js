@@ -61,7 +61,6 @@ export default async function handler(req, res) {
       second: '2-digit'
     });
 
-    // Kreiraj ime sheet-a po datumu: "2025-11-29"
     const dateStr = now.toLocaleDateString('sr-RS', {
       timeZone: 'Europe/Belgrade',
       year: 'numeric',
@@ -84,7 +83,6 @@ export default async function handler(req, res) {
         sheetId = existingSheet.properties.sheetId;
         console.log(`✓ Sheet "${sheetName}" already exists (ID: ${sheetId})`);
       } else {
-        // Kreiraj novi sheet
         const addSheetResponse = await sheets.spreadsheets.batchUpdate({
           spreadsheetId,
           resource: {
@@ -106,7 +104,6 @@ export default async function handler(req, res) {
         sheetId = addSheetResponse.data.replies[0].addSheet.properties.sheetId;
         console.log(`✓ Created new sheet "${sheetName}" (ID: ${sheetId})`);
         
-        // Dodaj header red
         await sheets.spreadsheets.values.update({
           spreadsheetId,
           range: `${sheetName}!A1:F1`,
@@ -116,7 +113,6 @@ export default async function handler(req, res) {
           }
         });
         
-        // Formatiraj header
         await sheets.spreadsheets.batchUpdate({
           spreadsheetId,
           resource: {
@@ -150,7 +146,7 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    // Pročitaj postojeće podatke iz današnjeg sheet-a
+    // Pročitaj postojeće podatke
     let existingData = [];
     try {
       const readResponse = await sheets.spreadsheets.values.get({
@@ -174,86 +170,79 @@ export default async function handler(req, res) {
       }
     });
 
-    // OPTIMIZACIJA: Grupiši vozila u batch-eve od 500
+    // KLJUČNA PROMENA: Obrađuj sva vozila odjednom, ne po batch-evima za upis
+    const finalData = [...existingData];
+    let newCount = 0;
+    let updateCount = 0;
+
+    vehicles.forEach(v => {
+      const vehicleLabel = v.vehicleLabel || '';
+      const rowData = [
+        vehicleLabel,
+        v.routeDisplayName || '',
+        v.startTime || '',
+        v.destName || '',
+        timestamp,
+        timestamp.split(',')[0].trim()
+      ];
+
+      if (existingVehicles.has(vehicleLabel)) {
+        // Ažuriraj postojeći red
+        const existingRow = existingVehicles.get(vehicleLabel);
+        const arrayIndex = existingRow.rowIndex - 2;
+        finalData[arrayIndex] = rowData;
+        updateCount++;
+      } else {
+        // Dodaj novi red
+        finalData.push(rowData);
+        newCount++;
+        // KLJUČNO: Odmah ažuriraj mapu
+        existingVehicles.set(vehicleLabel, { 
+          rowIndex: finalData.length + 1, 
+          data: rowData 
+        });
+      }
+    });
+
+    console.log(`Processing: ${updateCount} updates, ${newCount} new vehicles`);
+
+    // BATCH UPIS: Podeli finalData u batch-eve za Google Sheets API
     const BATCH_SIZE = 500;
     const batches = [];
     
-    for (let i = 0; i < vehicles.length; i += BATCH_SIZE) {
-      batches.push(vehicles.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < finalData.length; i += BATCH_SIZE) {
+      batches.push(finalData.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`Processing ${batches.length} batches of max ${BATCH_SIZE} vehicles each`);
-
-    let totalNewCount = 0;
-    let totalUpdateCount = 0;
+    console.log(`Writing ${batches.length} batches to Google Sheets`);
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
-      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} vehicles)`);
+      const startRow = (batchIndex * BATCH_SIZE) + 2;
+      const endRow = startRow + batch.length - 1;
 
-      // Pripremi podatke za ovaj batch
-      const finalData = [...existingData];
-      let newCount = 0;
-      let updateCount = 0;
-
-      batch.forEach(v => {
-        const vehicleLabel = v.vehicleLabel || '';
-        const rowData = [
-          vehicleLabel,
-          v.routeDisplayName || '',
-          v.startTime || '',
-          v.destName || '',
-          timestamp,
-          timestamp.split(',')[0].trim()
-        ];
-
-        if (existingVehicles.has(vehicleLabel)) {
-          // Ažuriraj postojeći red
-          const existingRow = existingVehicles.get(vehicleLabel);
-          const arrayIndex = existingRow.rowIndex - 2;
-          finalData[arrayIndex] = rowData;
-          updateCount++;
-        } else {
-          // Dodaj novi red
-          finalData.push(rowData);
-          newCount++;
-          existingVehicles.set(vehicleLabel, { 
-            rowIndex: finalData.length + 1, 
-            data: rowData 
-          });
-        }
-      });
-
-      // Ažuriraj sheet sa ovim batch-em
       try {
         await sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: `${sheetName}!A2:F${finalData.length + 1}`,
+          range: `${sheetName}!A${startRow}:F${endRow}`,
           valueInputOption: 'RAW',
           resource: {
-            values: finalData
+            values: batch
           }
         });
-        console.log(`✓ Batch ${batchIndex + 1}: ${updateCount} updated, ${newCount} new`);
-        
-        totalNewCount += newCount;
-        totalUpdateCount += updateCount;
-        
-        // Ažuriraj existingData za sledeći batch
-        existingData = finalData;
-        
+        console.log(`✓ Batch ${batchIndex + 1}/${batches.length} written (rows ${startRow}-${endRow})`);
       } catch (updateError) {
-        console.error(`Failed to update batch ${batchIndex + 1}:`, updateError.message);
+        console.error(`Failed to write batch ${batchIndex + 1}:`, updateError.message);
         throw updateError;
       }
 
-      // Pauza između batch-eva da izbegnemo rate limiting
+      // Pauza između batch-eva
       if (batchIndex < batches.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
-    // Sortiranje na kraju
+    // Sortiranje
     try {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
@@ -283,12 +272,12 @@ export default async function handler(req, res) {
 
     res.status(200).json({ 
       success: true, 
-      newVehicles: totalNewCount,
-      updatedVehicles: totalUpdateCount,
+      newVehicles: newCount,
+      updatedVehicles: updateCount,
       totalProcessed: vehicles.length,
       timestamp,
       sheetUsed: sheetName,
-      batchesProcessed: batches.length
+      batchesWritten: batches.length
     });
 
   } catch (error) {
@@ -298,4 +287,4 @@ export default async function handler(req, res) {
       details: error.message
     });
   }
-}
+        }
