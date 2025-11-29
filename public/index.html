@@ -51,6 +51,23 @@
             font-size: 2.5em;
             margin-bottom: 50px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            display: inline-block;
+        }
+
+        .m-letter {
+            position: relative;
+            display: inline-block;
+        }
+
+        .santa-hat-img {
+            position: absolute;
+            left: -20px;
+            top: -45px;
+            width: 60px;
+            height: auto;
+            transform: rotate(-20deg);
+            z-index: 10;
         }
 
         .button-container {
@@ -89,6 +106,12 @@
                 font-size: 2em;
             }
 
+            .santa-hat-img {
+                left: -15px;
+                top: -35px;
+                width: 45px;
+            }
+
             .btn {
                 padding: 15px 40px;
                 font-size: 1.1em;
@@ -99,7 +122,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>MapaBus</h1>
+        <h1>
+            <span class="m-letter">
+                <img src="https://pngimg.com/d/santa_hat_PNG90.png" alt="" class="santa-hat-img">
+                M
+            </span>apaBus
+        </h1>
         <div class="button-container">
             <a href="/api/sve" class="btn">Sva Vozila</a>
             <a href="/api/linije" class="btn">Izbor Linije</a>
@@ -108,7 +136,7 @@
     </div>
 
     <script>
-
+        // Kreiranje pahuljica
         function createSnowflake() {
             const snowflake = document.createElement('div');
             snowflake.classList.add('snowflake');
@@ -124,10 +152,10 @@
             }, 8000);
         }
 
-
+        // Kreiranje pahuljica svake 100ms (intenzivnije)
         setInterval(createSnowflake, 100);
 
-
+        // Inicijalno kreiranje pahuljica
         for (let i = 0; i < 50; i++) {
             setTimeout(createSnowflake, i * 50);
         }
