@@ -202,9 +202,56 @@
     </div>
 
     <script>
-        async function loadUsers() {
+        // Proveri admin status pri učitavanju
+        window.addEventListener('load', async function() {
+            const token = localStorage.getItem('authToken');
+            
+            if (!token) {
+                alert('Niste prijavljeni!');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Verifikuj da li je korisnik admin
             try {
-                const response = await fetch('/api/auth?action=listUsers');
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'verify', 
+                        token: token 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success || !data.isAdmin) {
+                    alert('Nemate admin privilegije!');
+                    window.location.href = '/';
+                    return;
+                }
+
+                // Admin je verifikovan, učitaj korisnike
+                loadUsers();
+            } catch (error) {
+                alert('Greška pri verifikaciji!');
+                window.location.href = '/login.html';
+            }
+        });
+
+        async function loadUsers() {
+            const token = localStorage.getItem('authToken');
+            
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'listUsers',
+                        token: token
+                    })
+                });
+                
                 const data = await response.json();
 
                 if (data.success) {
@@ -212,7 +259,7 @@
                     updateStats(data.users);
                 } else {
                     document.getElementById('usersTable').innerHTML = 
-                        '<tr><td colspan="6" style="text-align:center; color:#dc3545;">Greška pri učitavanju</td></tr>';
+                        '<tr><td colspan="6" style="text-align:center; color:#dc3545;">' + data.message + '</td></tr>';
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -274,6 +321,8 @@
                 return;
             }
 
+            const token = localStorage.getItem('authToken');
+
             try {
                 const response = await fetch('/api/auth', {
                     method: 'POST',
@@ -281,7 +330,8 @@
                     body: JSON.stringify({ 
                         action: 'updateStatus',
                         userIndex: userIndex + 2,
-                        status: newStatus
+                        status: newStatus,
+                        token: token
                     })
                 });
 
@@ -297,8 +347,6 @@
                 alert('Greška pri povezivanju sa serverom');
             }
         }
-
-        loadUsers();
     </script>
 </body>
 </html>
