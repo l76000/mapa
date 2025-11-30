@@ -13,12 +13,12 @@ export default async function handler(req, res) {
   const belgradTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Belgrade' }));
   const hour = belgradTime.getHours();
 
-  if (hour !== 2) {
-    console.log(`⏭️ Reset skipped - current hour is ${hour}, not 2 AM`);
-    return res.status(200).send(`SUCCESS - Reset skipped (hour: ${hour}, waiting for 2 AM)`);
+  if (hour !== 1) {
+    console.log(`⏭️ Reset skipped - current hour is ${hour}, not 1 AM`);
+    return res.status(200).send(`SUCCESS - Reset skipped (hour: ${hour}, waiting for 1 AM)`);
   }
 
-  console.log('✓ Time check passed - proceeding with reset at 2 AM');
+  console.log('✓ Time check passed - proceeding with reset at 1 AM');
   
   try {
     const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
