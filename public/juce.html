@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <script src="/auth-check.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jučerašnji Polasci</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .info-banner {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-banner-icon {
+            font-size: 24px;
+        }
+
+        .info-banner-text {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .search-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 13px;
+        }
+
+        input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4a4a4a;
+            box-shadow: 0 0 0 3px rgba(74, 74, 74, 0.1);
+        }
+
+        .routes-container {
+            display: grid;
+            gap: 20px;
+        }
+
+        .route-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .route-header {
+            background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%);
+            color: white;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .direction-section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .direction-section:last-child {
+            border-bottom: none;
+        }
+
+        .direction-title {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .departures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .departure-item {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .departure-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .departure-time {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2a2a2a;
+        }
+
+        .departure-vehicle {
+            font-size: 14px;
+            color: #666;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .departure-timestamp {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 40px;
+            color: #666;
+            font-size: 18px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .departures-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .route-header {
+                font-size: 18px;
+                padding: 15px;
+            }
+
+            .direction-title {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📅 Jučerašnji Polasci</h1>
+                <p class="subtitle">Arhiva polazaka iz prethodnog dana</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="stat-number" id="totalRoutes">-</span>
+                    <span class="stat-label">Linija</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="totalDirections">-</span>
+                    <span class="stat-label">Smerova</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="totalDepartures">-</span>
+                    <span class="stat-label">Polazaka</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-banner">
+            <span class="info-banner-icon">ℹ️</span>
+            <div>
+                <div class="info-banner-text">
+                    <strong>Napomena:</strong> Ovi podaci predstavljaju sve polaske koji su evidentirani juče. 
+                    Sheet se resetuje svakodnevno u 01:00.
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-group">
+                <label for="searchRoute">Pretraži liniju:</label>
+                <input type="text" id="searchRoute" placeholder="Npr. 601" oninput="filterRoutes()">
+            </div>
+            <div class="search-group">
+                <label for="searchDirection">Pretraži smer:</label>
+                <input type="text" id="searchDirection" placeholder="Npr. Surčin" oninput="filterRoutes()">
+            </div>
+            <div class="search-group">
+                <label for="searchTime">Pretraži vreme:</label>
+                <input type="text" id="searchTime" placeholder="Npr. 12:30" oninput="filterRoutes()">
+            </div>
+            <div class="search-group">
+                <label for="searchVehicle">Pretraži vozilo:</label>
+                <input type="text" id="searchVehicle" placeholder="Npr. P70618" oninput="filterRoutes()">
+            </div>
+        </div>
+
+        <div id="routesContainer" class="routes-container">
+            <div class="loading">Učitavam jučerašnje podatke</div>
+        </div>
+    </div>
+
+    <script>
+        let allRoutes = [];
+
+        async function loadData() {
+            const container = document.getElementById('routesContainer');
+            container.innerHTML = '<div class="loading">Učitavam jučerašnje podatke</div>';
+
+            try {
+                const response = await fetch('/api/update-departures-sheet?yesterday=true');
+                const data = await response.json();
+
+                if (data.success && data.routes && data.routes.length > 0) {
+                    allRoutes = data.routes;
+                    renderRoutes(allRoutes);
+                    updateStats(allRoutes);
+                    console.log(`✓ Učitano ${allRoutes.length} linija iz jučerašnjih podataka`);
+                } else {
+                    container.innerHTML = '<div class="no-data">📭 Nema jučerašnjih podataka</div>';
+                }
+            } catch (error) {
+                console.error('Greška:', error);
+                container.innerHTML = '<div class="no-data">❌ Greška pri učitavanju podataka</div>';
+            }
+        }
+
+        function renderRoutes(routes) {
+            const container = document.getElementById('routesContainer');
+            
+            if (routes.length === 0) {
+                container.innerHTML = '<div class="no-data">Nema rezultata za zadatu pretragu</div>';
+                return;
+            }
+
+            container.innerHTML = routes.map(route => {
+                const directionsHTML = route.directions.map(direction => {
+                    const departuresHTML = direction.departures.map(dep => `
+                        <div class="departure-item">
+                            <div>
+                                <div class="departure-time">${dep.startTime}</div>
+                                ${dep.timestamp ? `<div class="departure-timestamp">${dep.timestamp}</div>` : ''}
+                            </div>
+                            <div class="departure-vehicle">${dep.vehicleLabel}</div>
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="direction-section">
+                            <div class="direction-title">
+                                🚏 ${direction.directionName} 
+                                <span style="color: #999; font-weight: normal; font-size: 14px;">
+                                    (${direction.departures.length} polazaka)
+                                </span>
+                            </div>
+                            <div class="departures-grid">
+                                ${departuresHTML}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="route-card">
+                        <div class="route-header">
+                            🚌 Linija ${route.routeName}
+                        </div>
+                        ${directionsHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterRoutes() {
+            const routeSearch = document.getElementById('searchRoute').value.toLowerCase();
+            const directionSearch = document.getElementById('searchDirection').value.toLowerCase();
+            const timeSearch = document.getElementById('searchTime').value.toLowerCase();
+            const vehicleSearch = document.getElementById('searchVehicle').value.toLowerCase();
+
+            const filtered = allRoutes.map(route => {
+                // Provera za liniju
+                if (routeSearch && !route.routeName.toLowerCase().includes(routeSearch)) {
+                    return null;
+                }
+
+                // Filtriraj smerove
+                const filteredDirections = route.directions.map(direction => {
+                    // Provera za smer
+                    if (directionSearch && !direction.directionName.toLowerCase().includes(directionSearch)) {
+                        return null;
+                    }
+
+                    // Filtriraj polaske
+                    const filteredDepartures = direction.departures.filter(dep => {
+                        const timeMatch = !timeSearch || dep.startTime.toLowerCase().includes(timeSearch);
+                        const vehicleMatch = !vehicleSearch || dep.vehicleLabel.toLowerCase().includes(vehicleSearch);
+                        return timeMatch && vehicleMatch;
+                    });
+
+                    if (filteredDepartures.length === 0) return null;
+
+                    return {
+                        ...direction,
+                        departures: filteredDepartures
+                    };
+                }).filter(d => d !== null);
+
+                if (filteredDirections.length === 0) return null;
+
+                return {
+                    ...route,
+                    directions: filteredDirections
+                };
+            }).filter(r => r !== null);
+
+            renderRoutes(filtered);
+            updateStats(filtered);
+        }
+
+        function updateStats(routes) {
+            let totalDirections = 0;
+            let totalDepartures = 0;
+
+            routes.forEach(route => {
+                totalDirections += route.directions.length;
+                route.directions.forEach(direction => {
+                    totalDepartures += direction.departures.length;
+                });
+            });
+
+            document.getElementById('totalRoutes').textContent = routes.length;
+            document.getElementById('totalDirections').textContent = totalDirections;
+            document.getElementById('totalDepartures').textContent = totalDepartures;
+        }
+
+        // Inicijalizacija
+        loadData();
+    </script>
+</body>
+</html>
