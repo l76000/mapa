@@ -185,7 +185,6 @@
                 <thead>
                     <tr>
                         <th>Korisničko ime</th>
-                        <th>Email</th>
                         <th>Status</th>
                         <th>Registrovan</th>
                         <th>Poslednja IP</th>
@@ -195,7 +194,7 @@
                 </thead>
                 <tbody id="usersTable">
                     <tr>
-                        <td colspan="7" class="loading">Učitavanje...</td>
+                        <td colspan="6" class="loading">Učitavanje...</td>
                     </tr>
                 </tbody>
             </table>
@@ -203,9 +202,6 @@
     </div>
 
     <script>
-        // NAPOMENA: U produkciji, proveri da li je korisnik ADMIN!
-        // Dodaj admin flag u Users sheet i proveri ga ovde
-
         async function loadUsers() {
             try {
                 const response = await fetch('/api/auth?action=listUsers');
@@ -216,12 +212,12 @@
                     updateStats(data.users);
                 } else {
                     document.getElementById('usersTable').innerHTML = 
-                        '<tr><td colspan="7" style="text-align:center; color:#dc3545;">Greška pri učitavanju</td></tr>';
+                        '<tr><td colspan="6" style="text-align:center; color:#dc3545;">Greška pri učitavanju</td></tr>';
                 }
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('usersTable').innerHTML = 
-                    '<tr><td colspan="7" style="text-align:center; color:#dc3545;">Greška pri povezivanju</td></tr>';
+                    '<tr><td colspan="6" style="text-align:center; color:#dc3545;">Greška pri povezivanju</td></tr>';
             }
         }
 
@@ -229,7 +225,7 @@
             const tbody = document.getElementById('usersTable');
             
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nema korisnika</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nema korisnika</td></tr>';
                 return;
             }
 
@@ -253,7 +249,6 @@
                 return `
                     <tr>
                         <td><strong>${user.username}</strong></td>
-                        <td>${user.email}</td>
                         <td><span class="status-badge ${statusClass}">${user.status.toUpperCase()}</span></td>
                         <td>${user.registeredAt}</td>
                         <td>${user.lastIP}</td>
@@ -303,10 +298,7 @@
             }
         }
 
-        // Učitaj korisnike
         loadUsers();
-
-
     </script>
 </body>
 </html>
