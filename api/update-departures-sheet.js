@@ -131,10 +131,12 @@ export default async function handler(req, res) {
     });
 
     console.log(`Today's date: ${todayDate}`);
+    console.log(`Sample dates from Baza:`, bazaRows.slice(0, 3).map(r => r[5]));
 
     // Grupisanje po linijama i smerovima - samo današnja vozila
     const routeMap = {};
     let skippedOld = 0;
+    let processedToday = 0;
     
     bazaRows.forEach(row => {
       const vozilo = row[0] || '';
@@ -146,11 +148,19 @@ export default async function handler(req, res) {
 
       if (!linija || !polazak || !smer) return;
 
-      // Proveri da li je vozilo viđeno danas
-      if (datum !== todayDate) {
+      // Proveri da li je vozilo viđeno danas - fleksibilno poređenje
+      // Ukloni razmake i poređaj samo datum deo
+      const cleanDatum = datum.trim();
+      const cleanToday = todayDate.trim();
+      
+      console.log(`Comparing: "${cleanDatum}" vs "${cleanToday}"`);
+      
+      if (cleanDatum !== cleanToday) {
         skippedOld++;
         return;
       }
+      
+      processedToday++;
 
       if (!routeMap[linija]) {
         routeMap[linija] = {};
@@ -167,7 +177,8 @@ export default async function handler(req, res) {
       });
     });
 
-    console.log(`Grouped into ${Object.keys(routeMap).length} routes (skipped ${skippedOld} old vehicles)`);
+    console.log(`Processed ${processedToday} today's vehicles, skipped ${skippedOld} old vehicles`);
+    console.log(`Grouped into ${Object.keys(routeMap).length} routes`);
 
     if (Object.keys(routeMap).length === 0) {
       return res.status(200).json({
