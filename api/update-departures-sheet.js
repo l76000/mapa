@@ -2,13 +2,123 @@ import { google } from 'googleapis';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // ===== NOVI DEO: GET za čitanje podataka =====
+  if (req.method === 'GET') {
+    console.log('=== Departures Sheet Read Request ===');
+    
+    try {
+      const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
+      const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
+
+      if (!clientEmail || !privateKey || !spreadsheetId) {
+        return res.status(500).json({ 
+          error: 'Missing environment variables'
+        });
+      }
+
+      let formattedPrivateKey = privateKey;
+      if (privateKey.includes('\\n')) {
+        formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
+      }
+
+      const auth = new google.auth.GoogleAuth({
+        credentials: {
+          client_email: clientEmail,
+          private_key: formattedPrivateKey,
+        },
+        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+      });
+
+      const sheets = google.sheets({ version: 'v4', auth });
+      const sheetName = 'Polasci';
+
+      // Čitaj sve podatke
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${sheetName}!A1:J`,
+      });
+
+      const rows = response.data.values || [];
+      console.log(`Read ${rows.length} rows from sheet`);
+
+      // Parsiraj podatke u strukturu
+      const routes = [];
+      let currentRoute = null;
+      let currentDirection = null;
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        
+        // Skip prazni redovi i reset poruke
+        if (!row[0] || row[0].includes('resetovan')) continue;
+        
+        // Novi route
+        if (row[0].startsWith('Linija ')) {
+          if (currentRoute) {
+            routes.push(currentRoute);
+          }
+          
+          currentRoute = {
+            routeName: row[0].replace('Linija ', '').trim(),
+            directions: []
+          };
+          currentDirection = null;
+        }
+        // Novi smer
+        else if (row[0].startsWith('Smer: ')) {
+          if (currentRoute) {
+            currentDirection = {
+              directionName: row[0].replace('Smer: ', '').trim(),
+              departures: []
+            };
+            currentRoute.directions.push(currentDirection);
+          }
+        }
+        // Skip header reda
+        else if (row[0] === 'Polazak') {
+          continue;
+        }
+        // Polazak
+        else if (currentDirection && row[0] && row[0].match(/^\d{1,2}:\d{2}/)) {
+          currentDirection.departures.push({
+            startTime: row[0],
+            vehicleLabel: row[1] || '',
+            timestamp: row[2] || ''
+          });
+        }
+      }
+
+      // Dodaj poslednji route
+      if (currentRoute) {
+        routes.push(currentRoute);
+      }
+
+      console.log(`Parsed ${routes.length} routes`);
+
+      return res.status(200).json({
+        success: true,
+        routes: routes,
+        totalRoutes: routes.length
+      });
+
+    } catch (error) {
+      console.error('Read error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  // ===== ORIGINALNI DEO: POST za ažuriranje =====
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -395,4 +505,4 @@ export default async function handler(req, res) {
       details: error.message
     });
   }
-                                    }
+        }
