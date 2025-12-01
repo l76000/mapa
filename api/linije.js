@@ -747,7 +747,22 @@ export default function handler(req, res) {
                 osveziPodatke();
             }, seconds * 1000);
         }
- 
+
+ function checkUrlParameter() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const lineParam = urlParams.get('line');
+    
+    if (lineParam) {
+        document.getElementById('lineInput').value = lineParam;
+        // Sačekaj da se učitaju route names pa dodaj liniju
+        setTimeout(() => {
+            dodajLiniju();
+        }, 1000);
+    }
+}
+
+// Pozovi pri učitavanju stranice
+setTimeout(checkUrlParameter, 1500);
     </script>
 </body>
 </html>
