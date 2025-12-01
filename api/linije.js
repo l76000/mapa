@@ -763,6 +763,37 @@ export default function handler(req, res) {
 
 // Pozovi pri učitavanju stranice
 setTimeout(checkUrlParameter, 1500);
+
+// ====== AUTOMATSKO UČITAVANJE LINIJE IZ URL-a ======
+function checkUrlParameter() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const lineParam = urlParams.get('line');
+    
+    if (lineParam) {
+        // Sačekaj da se učitaju route names
+        const waitForRouteNames = setInterval(() => {
+            if (Object.keys(routeNamesMap).length > 0) {
+                clearInterval(waitForRouteNames);
+                
+                // Postavi vrednost u input
+                document.getElementById('lineInput').value = lineParam;
+                
+                // Klikni dugme za dodavanje
+                dodajLiniju();
+            }
+        }, 200);
+        
+        // Timeout ako se ne učita za 5 sekundi
+        setTimeout(() => {
+            clearInterval(waitForRouteNames);
+        }, 5000);
+    }
+}
+
+// Pozovi kada se stranica učita
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkUrlParameter, 500);
+});
     </script>
 </body>
 </html>
