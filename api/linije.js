@@ -116,7 +116,7 @@ export default function handler(req, res) {
         <h3>Sva Vozila Prijavljena na Polazak</h3>
  
         <div class="input-group">
-            <input type="text" id="lineInput" placeholder="Linija (npr. 31, 860MV, 3A)" onkeypress="handleEnter(event)">
+            <input type="text" id="lineInput" placeholder="Linija (npr.31, 860MV, 3A)" onkeypress="handleEnter(event)">
             <button id="addBtn" onclick="dodajLiniju()">+</button>
         </div>
  
@@ -770,12 +770,12 @@ let urlLineLoaded = false; // Flag da sprečimo duplo učitavanje
 function checkUrlParameter() {
     if (urlLineLoaded) return; // Već učitano, izađi
     
-    const urlParams = new URLSearchParams(window. location.search);
+    const urlParams = new URLSearchParams(window.location.search);
     const lineParam = urlParams.get('line');
     
     if (lineParam) {
         const waitForRouteNames = setInterval(() => {
-            if (Object.keys(routeNamesMap). length > 0) {
+            if (Object.keys(routeNamesMap).length > 0) {
                 clearInterval(waitForRouteNames);
                 
                 if (urlLineLoaded) return; // Još jedna provera
@@ -783,13 +783,13 @@ function checkUrlParameter() {
                 
                 // Proveri da li je linija već dodata
                 const routeId = findRouteId(lineParam);
-                if (routeId && ! izabraneLinije. includes(routeId)) {
+                if (routeId && ! izabraneLinije.includes(routeId)) {
                     document.getElementById('lineInput').value = lineParam;
                     dodajLiniju();
                 }
                 
                 // Očisti URL parametar bez refresha
-                window. history.replaceState({}, document.title, window.location.pathname);
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         }, 200);
         
