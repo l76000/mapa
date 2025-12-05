@@ -1,0 +1,766 @@
+<! DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Vožnje - Šumice → Prigradske linije</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #1e3c72;
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .lines-badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .line-badge {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box label {
+            font-weight: 600;
+            color: #1e3c72;
+            font-size: 16px;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+        }
+
+        .search-box button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        . search-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0. 4);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+        }
+
+        .search-results {
+            display: none;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #e3f2fd;
+            border-radius: 8px;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #e3f2fd;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-vehicle {
+            font-weight: 600;
+            color: #1e3c72;
+        }
+
+        .result-count {
+            background: #1e3c72;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .direction-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .direction-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .direction-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .direction-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .schedule-grid {
+            padding: 15px;
+        }
+
+        .hour-row {
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 10px 0;
+        }
+
+        .hour-row:last-child {
+            border-bottom: none;
+        }
+
+        .hour-cell {
+            width: 50px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e3c72;
+            text-align: center;
+            padding-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .minutes-cell {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .minute-badge {
+            background: #e3f2fd;
+            color: #1e3c72;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+        }
+
+        .minute-badge:hover {
+            background: #1e3c72;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .minute-badge . minute {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .minute-badge .line-tag {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .minute-badge:hover .line-tag {
+            opacity: 1;
+        }
+
+        .minute-badge.highlighted {
+            background: #ffc107;
+            color: #333;
+            animation: pulse 1. 5s infinite;
+        }
+
+        .minute-badge.highlighted .line-tag {
+            color: #333;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); }
+        }
+
+        /* Boje za različite linije */
+        . minute-badge.line-351 { border-left: 4px solid #2196F3; }
+        .minute-badge.line-352 { border-left: 4px solid #4CAF50; }
+        .minute-badge.line-352a { border-left: 4px solid #8BC34A; }
+        .minute-badge.line-354 { border-left: 4px solid #FF9800; }
+        .minute-badge.line-354b { border-left: 4px solid #FF5722; }
+        .minute-badge.line-355a { border-left: 4px solid #9C27B0; }
+        . minute-badge.line-355b { border-left: 4px solid #E91E63; }
+        .minute-badge.line-356 { border-left: 4px solid #00BCD4; }
+        .minute-badge.line-361 { border-left: 4px solid #3F51B5; }
+        .minute-badge.line-363 { border-left: 4px solid #795548; }
+        .minute-badge. line-366 { border-left: 4px solid #607D8B; }
+
+        /* Tooltip / Oblačić */
+        .tooltip {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e3c72;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: #1e3c72;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        . tooltip-vehicle {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .tooltip-line {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+
+        .tooltip-destination {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+
+        .legend {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        . legend-title {
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-color.c-351 { background: #2196F3; }
+        .legend-color.c-352 { background: #4CAF50; }
+        . legend-color.c-352a { background: #8BC34A; }
+        .legend-color. c-354 { background: #FF9800; }
+        .legend-color. c-354b { background: #FF5722; }
+        .legend-color. c-355a { background: #9C27B0; }
+        .legend-color.c-355b { background: #E91E63; }
+        .legend-color.c-356 { background: #00BCD4; }
+        . legend-color.c-361 { background: #3F51B5; }
+        .legend-color.c-363 { background: #795548; }
+        .legend-color. c-366 { background: #607D8B; }
+        .legend-color. c-highlight { background: #ffc107; }
+
+        . stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .hour-cell {
+                width: 40px;
+                font-size: 18px;
+            }
+            
+            .minute-badge {
+                padding: 6px 10px;
+                min-width: 45px;
+            }
+            
+            . minute-badge .minute {
+                font-size: 14px;
+            }
+            
+            .minute-badge .line-tag {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Red Vožnje</h1>
+            <p class="subtitle">Šumice → Prigradske destinacije</p>
+            <div class="lines-badges">
+                <span class="line-badge">351</span>
+                <span class="line-badge">352</span>
+                <span class="line-badge">352a</span>
+                <span class="line-badge">354</span>
+                <span class="line-badge">354b</span>
+                <span class="line-badge">355a</span>
+                <span class="line-badge">355b</span>
+                <span class="line-badge">356</span>
+                <span class="line-badge">361</span>
+                <span class="line-badge">363</span>
+                <span class="line-badge">366</span>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalDepartures">0</div>
+                    <div class="stat-label">Ukupno polazaka</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalVehicles">0</div>
+                    <div class="stat-label">Vozila</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalLines">0</div>
+                    <div class="stat-label">Linija</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <label for="vehicleSearch">🔍 Pretraga vozila:</label>
+                <input type="text" id="vehicleSearch" placeholder="Unesite broj vozila (npr. P71015)">
+                <button onclick="searchVehicle()">Pretraži</button>
+                <button class="clear-btn" onclick="clearSearch()">Obriši</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <div class="direction-card">
+            <div class="direction-header">
+                <div class="direction-title">Šumice → Prigradske destinacije</div>
+                <div class="direction-subtitle">Polasci sa Šumica (smer od grada)</div>
+            </div>
+            <div class="schedule-grid" id="schedule-sumice">
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title">Legenda linija</div>
+            <div class="legend-items">
+                <div class="legend-item"><div class="legend-color c-351"></div><span>351 → Dražanj</span></div>
+                <div class="legend-item"><div class="legend-color c-352"></div><span>352 → Dražanj</span></div>
+                <div class="legend-item"><div class="legend-color c-352a"></div><span>352a → Dražanj</span></div>
+                <div class="legend-item"><div class="legend-color c-354"></div><span>354 → Trajna jaruga</span></div>
+                <div class="legend-item"><div class="legend-color c-354b"></div><span>354b → Šumadijska</span></div>
+                <div class="legend-item"><div class="legend-color c-355a"></div><span>355a → Dražanj</span></div>
+                <div class="legend-item"><div class="legend-color c-355b"></div><span>355b</span></div>
+                <div class="legend-item"><div class="legend-color c-356"></div><span>356 → Ilinski kraj</span></div>
+                <div class="legend-item"><div class="legend-color c-361"></div><span>361 → Živkovac</span></div>
+                <div class="legend-item"><div class="legend-color c-363"></div><span>363 → Živkovac</span></div>
+                <div class="legend-item"><div class="legend-color c-366"></div><span>366 → Trajna jaruga</span></div>
+                <div class="legend-item"><div class="legend-color c-highlight"></div><span>Pretraženo vozilo</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Podaci iz uploadovanih fajlova - samo smer IZ Šumica (ne ka Šumicama)
+        // Izvučeni svi polasci gde je smer "ide ka" nešto DRUGO od Šumica
+        const scheduleData = {
+            sumicePolasci: [
+                // ============ 351 - Dražanj okretnica (iz 35X.html) ============
+                { time: "06:00", vehicle: "P79433", line: "351", destination: "Dražanj" },
+                { time: "08:00", vehicle: "P71027", line: "351", destination: "Dražanj" },
+                { time: "09:00", vehicle: "P71015", line: "351", destination: "Dražanj" },
+                { time: "10:30", vehicle: "P71012", line: "351", destination: "Dražanj" },
+                { time: "11:30", vehicle: "P71027", line: "351", destination: "Dražanj" },
+                { time: "12:00", vehicle: "P70148", line: "351", destination: "Dražanj" },
+                { time: "13:30", vehicle: "P71011", line: "351", destination: "Dražanj" },
+                { time: "14:30", vehicle: "P79429", line: "351", destination: "Dražanj" },
+                { time: "15:15", vehicle: "P71015", line: "351", destination: "Dražanj" },
+                { time: "17:00", vehicle: "P71011", line: "351", destination: "Dražanj" },
+                { time: "19:00", vehicle: "P79429", line: "351", destination: "Dražanj" },
+                { time: "20:00", vehicle: "P71027", line: "351", destination: "Dražanj" },
+                { time: "20:30", vehicle: "P71012", line: "351", destination: "Dražanj" },
+                { time: "21:15", vehicle: "P70146", line: "351", destination: "Dražanj" },
+                { time: "21:15", vehicle: "P71031", line: "351", destination: "Dražanj" },
+                { time: "22:30", vehicle: "P70148", line: "351", destination: "Dražanj" },
+
+                // ============ 352 - Dražanj okretnica (iz 35X.html) ============
+                { time: "05:45", vehicle: "P70142", line: "352", destination: "Dražanj" },
+                { time: "09:30", vehicle: "P70148", line: "352", destination: "Dražanj" },
+                { time: "16:00", vehicle: "P71032", line: "352", destination: "Dražanj" },
+                { time: "17:10", vehicle: "P70148", line: "352", destination: "Dražanj" },
+                { time: "22:00", vehicle: "P79429", line: "352", destination: "Dražanj" },
+
+                // ============ 352a - Dražanj okretnica (iz 35X.html) ============
+                { time: "15:00", vehicle: "P71012", line: "352a", destination: "Dražanj" },
+
+                // ============ 354 - Trajna jaruga okretnica (iz 35X.html) ============
+                { time: "06:10", vehicle: "P71012", line: "354", destination: "Trajna jaruga" },
+
+                // ============ 354b - Šumadijska (iz 35X. html) ============
+                { time: "05:30", vehicle: "P70148", line: "354b", destination: "Šumadijska" },
+                { time: "12:30", vehicle: "P70142", line: "354b", destination: "Šumadijska" },
+                { time: "17:50", vehicle: "P70146", line: "354b", destination: "Šumadijska" },
+                { time: "17:50", vehicle: "P71031", line: "354b", destination: "Šumadijska" },
+
+                // ============ 355a - Dražanj okretnica (iz 35X.html) ============
+                { time: "23:00", vehicle: "P71027", line: "355a", destination: "Dražanj" },
+
+                // ============ 355b - nema podataka u uploadovanim fajlovima ============
+
+                // ============ 356 - Ilinski kraj okretnica (iz 35X.html) ============
+                { time: "15:45", vehicle: "P70142", line: "356", destination: "Ilinski kraj" },
+
+                // ============ 361 - Živkovac okretnica (iz 36X.html) ============
+                { time: "05:30", vehicle: "P71015", line: "361", destination: "Živkovac" },
+
+                // ============ 363 - Živkovac okretnica (iz 36X.html) ============
+                { time: "07:20", vehicle: "P71032", line: "363", destination: "Živkovac" },
+                { time: "12:45", vehicle: "P79433", line: "363", destination: "Živkovac" },
+                { time: "14:45", vehicle: "P71027", line: "363", destination: "Živkovac" },
+                { time: "16:15", vehicle: "P79433", line: "363", destination: "Živkovac" },
+                { time: "18:30", vehicle: "P71032", line: "363", destination: "Živkovac" },
+                { time: "20:15", vehicle: "P71011", line: "363", destination: "Živkovac" },
+
+                // ============ 366 - Trajna jaruga okretnica (iz 36X.html) ============
+                { time: "11:00", vehicle: "P79429", line: "366", destination: "Trajna jaruga" },
+                { time: "11:20", vehicle: "P70146", line: "366", destination: "Trajna jaruga" },
+                { time: "11:20", vehicle: "P71031", line: "366", destination: "Trajna jaruga" },
+                { time: "14:20", vehicle: "P70146", line: "366", destination: "Trajna jaruga" },
+                { time: "14:20", vehicle: "P71031", line: "366", destination: "Trajna jaruga" },
+                { time: "21:30", vehicle: "P70142", line: "366", destination: "Trajna jaruga" }
+            ]
+        };
+
+        // Uklanjanje duplikata (isto vreme + isto vozilo + ista linija)
+        function removeDuplicates(data) {
+            const seen = new Set();
+            return data. filter(dep => {
+                const key = `${dep.time}-${dep.vehicle}-${dep.line}`;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen. add(key);
+                return true;
+            });
+        }
+
+        scheduleData.sumicePolasci = removeDuplicates(scheduleData.sumicePolasci);
+
+        let activeTooltip = null;
+
+        // Generisanje reda vožnje
+        function generateSchedule(containerId, data) {
+            const container = document.getElementById(containerId);
+            
+            const hourlyData = {};
+            data.forEach(dep => {
+                const [hour, minute] = dep.time.split(':');
+                if (!hourlyData[hour]) {
+                    hourlyData[hour] = [];
+                }
+                hourlyData[hour].push({ minute, vehicle: dep. vehicle, line: dep.line, destination: dep.destination });
+            });
+
+            // Sortiranje po satima
+            const sortedHours = Object.keys(hourlyData).sort((a, b) => {
+                return parseInt(a) - parseInt(b);
+            });
+
+            let html = '';
+            sortedHours.forEach(hour => {
+                const minutes = hourlyData[hour]. sort((a, b) => parseInt(a.minute) - parseInt(b. minute));
+                html += `
+                    <div class="hour-row">
+                        <div class="hour-cell">${hour}</div>
+                        <div class="minutes-cell">
+                            ${minutes.map(m => `
+                                <span class="minute-badge line-${m.line. replace(/\s/g, '')}" 
+                                      data-time="${hour}:${m. minute}" 
+                                      data-vehicle="${m.vehicle}"
+                                      data-line="${m. line}"
+                                      data-destination="${m.destination}"
+                                      onclick="toggleTooltip(event, this)">
+                                    <span class="minute">${m.minute}</span>
+                                    <span class="line-tag">${m.line}</span>
+                                    <div class="tooltip">
+                                        <div class="tooltip-vehicle">${m.vehicle}</div>
+                                        <div class="tooltip-line">Linija ${m.line}</div>
+                                        <div class="tooltip-destination">→ ${m.destination}</div>
+                                    </div>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Statistike
+        function updateStats() {
+            const totalDepartures = scheduleData.sumicePolasci.length;
+            document.getElementById('totalDepartures').textContent = totalDepartures;
+
+            const allVehicles = new Set();
+            const allLines = new Set();
+            scheduleData.sumicePolasci.forEach(dep => {
+                allVehicles.add(dep. vehicle);
+                allLines.add(dep.line);
+            });
+            document.getElementById('totalVehicles').textContent = allVehicles.size;
+            document.getElementById('totalLines').textContent = allLines.size;
+        }
+
+        // Toggle tooltip
+        function toggleTooltip(event, element) {
+            event.stopPropagation();
+            
+            const tooltip = element.querySelector('.tooltip');
+            
+            // Zatvori prethodni tooltip
+            if (activeTooltip && activeTooltip !== tooltip) {
+                activeTooltip.classList.remove('show');
+            }
+            
+            // Toggle trenutni
+            tooltip.classList. toggle('show');
+            activeTooltip = tooltip. classList.contains('show') ? tooltip : null;
+        }
+
+        // Zatvori tooltip klikom bilo gde
+        document. addEventListener('click', function(e) {
+            if (activeTooltip && ! e.target.closest('.minute-badge')) {
+                activeTooltip. classList.remove('show');
+                activeTooltip = null;
+            }
+        });
+
+        // Pretraga vozila
+        function searchVehicle() {
+            const query = document.getElementById('vehicleSearch').value.trim(). toUpperCase();
+            const resultsContainer = document. getElementById('searchResults');
+
+            if (!query) {
+                resultsContainer.classList.remove('show');
+                return;
+            }
+
+            const allVehicles = new Map();
+            
+            scheduleData. sumicePolasci.forEach(dep => {
+                if (dep.vehicle. toUpperCase().includes(query)) {
+                    if (!allVehicles.has(dep. vehicle)) {
+                        allVehicles.set(dep. vehicle, 0);
+                    }
+                    allVehicles.set(dep.vehicle, allVehicles. get(dep.vehicle) + 1);
+                }
+            });
+
+            if (allVehicles.size === 0) {
+                resultsContainer.innerHTML = '<div class="search-result-item"><span>Vozilo nije pronađeno</span></div>';
+                resultsContainer.classList. add('show');
+                return;
+            }
+
+            const sortedVehicles = [... allVehicles. entries()].sort((a, b) => b[1] - a[1]);
+
+            let html = '';
+            sortedVehicles.forEach(([vehicle, count]) => {
+                html += `
+                    <div class="search-result-item" onclick="highlightVehicle('${vehicle}')">
+                        <span class="result-vehicle">${vehicle}</span>
+                        <span class="result-count">${count} polazaka</span>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+            resultsContainer.classList.add('show');
+        }
+
+        // Označavanje polazaka vozila
+        function highlightVehicle(vehicle) {
+            document.querySelectorAll('.minute-badge').forEach(b => {
+                b.classList.remove('highlighted');
+            });
+
+            document.querySelectorAll('.minute-badge'). forEach(b => {
+                if (b.dataset. vehicle === vehicle) {
+                    b. classList.add('highlighted');
+                }
+            });
+
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('vehicleSearch').value = vehicle;
+        }
+
+        function clearSearch() {
+            document.getElementById('vehicleSearch').value = '';
+            document.getElementById('searchResults').classList.remove('show');
+            document.querySelectorAll('.minute-badge').forEach(b => {
+                b.classList.remove('highlighted');
+            });
+        }
+
+        // Enter za pretragu
+        document.getElementById('vehicleSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchVehicle();
+        });
+
+        // Live pretraga
+        document.getElementById('vehicleSearch').addEventListener('input', function() {
+            if (this.value. length >= 2) {
+                searchVehicle();
+            } else {
+                document.getElementById('searchResults').classList.remove('show');
+            }
+        });
+
+        // Inicijalizacija
+        generateSchedule('schedule-sumice', scheduleData.sumicePolasci);
+        updateStats();
+    </script>
+</body>
+</html>
