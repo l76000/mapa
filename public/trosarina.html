@@ -75,7 +75,7 @@
             text-align: center;
         }
 
-        .direction-header. green {
+        .direction-header.green {
             background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
         }
 
@@ -105,7 +105,7 @@
             padding: 10px 0;
         }
 
-        . hour-row:last-child {
+        .hour-row:last-child {
             border-bottom: none;
         }
 
@@ -148,7 +148,7 @@
             transform: scale(1.05);
         }
 
-        .minute-badge . minute {
+        .minute-badge .minute {
             font-size: 16px;
             font-weight: bold;
         }
@@ -164,13 +164,13 @@
         }
 
         /* Boje za različite linije */
-        . minute-badge.line-451 { border-left: 4px solid #2196F3; }
+        .minute-badge.line-451 { border-left: 4px solid #2196F3; }
         .minute-badge.line-466 { border-left: 4px solid #4CAF50; }
-        . minute-badge.line-466a { border-left: 4px solid #8BC34A; }
+        .minute-badge.line-466a { border-left: 4px solid #8BC34A; }
         .minute-badge.line-470 { border-left: 4px solid #FF9800; }
         .minute-badge.line-470a { border-left: 4px solid #FFC107; }
         .minute-badge.line-474 { border-left: 4px solid #9C27B0; }
-        .minute-badge. line-450 { border-left: 4px solid #E91E63; }
+        .minute-badge.line-450 { border-left: 4px solid #E91E63; }
         .minute-badge.line-491 { border-left: 4px solid #00BCD4; }
         .minute-badge.line-491a { border-left: 4px solid #009688; }
 
@@ -193,7 +193,7 @@
             transition: opacity 0.2s, visibility 0.2s;
         }
 
-        . tooltip::after {
+        .tooltip::after {
             content: '';
             position: absolute;
             top: 100%;
@@ -208,14 +208,14 @@
             visibility: visible;
         }
 
-        . tooltip-vehicle {
+        .tooltip-vehicle {
             font-weight: bold;
             font-size: 16px;
         }
 
         .tooltip-line {
             font-size: 12px;
-            opacity: 0. 9;
+            opacity: 0.9;
             margin-top: 3px;
         }
 
@@ -227,7 +227,7 @@
             margin-bottom: 20px;
         }
 
-        . legend-title {
+        .legend-title {
             font-weight: 600;
             color: #1e3c72;
             margin-bottom: 12px;
@@ -257,13 +257,13 @@
 
         .legend-color.c-451 { background: #2196F3; }
         .legend-color.c-466 { background: #4CAF50; }
-        . legend-color.c-466a { background: #8BC34A; }
-        .legend-color. c-470 { background: #FF9800; }
-        .legend-color. c-470a { background: #FFC107; }
-        .legend-color. c-474 { background: #9C27B0; }
+        .legend-color.c-466a { background: #8BC34A; }
+        .legend-color.c-470 { background: #FF9800; }
+        .legend-color.c-470a { background: #FFC107; }
+        .legend-color.c-474 { background: #9C27B0; }
         .legend-color.c-450 { background: #E91E63; }
         .legend-color.c-491 { background: #00BCD4; }
-        . legend-color.c-491a { background: #009688; }
+        .legend-color.c-491a { background: #009688; }
 
         .two-columns {
             display: grid;
@@ -283,12 +283,12 @@
                 font-size: 18px;
             }
             
-            . minute-badge {
+            .minute-badge {
                 padding: 6px 10px;
                 min-width: 45px;
             }
             
-            . minute-badge .minute {
+            .minute-badge .minute {
                 font-size: 14px;
             }
             
@@ -564,19 +564,19 @@
         function renderSchedule(containerId, data) {
             const container = document.getElementById(containerId);
             const grouped = groupByHour(data);
-            const hours = Object.keys(grouped).map(Number). sort((a, b) => a - b);
+            const hours = Object.keys(grouped).map(Number).sort((a, b) => a - b);
             
             let html = '';
             hours.forEach(hour => {
-                const hourStr = hour.toString(). padStart(2, '0');
-                const minutes = grouped[hour]. sort((a, b) => parseInt(a.minute) - parseInt(b. minute));
+                const hourStr = hour.toString().padStart(2, '0');
+                const minutes = grouped[hour].sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
                 
                 html += `<div class="hour-row">
                     <div class="hour-cell">${hourStr}</div>
                     <div class="minutes-cell">`;
                 
                 minutes.forEach(m => {
-                    const lineClass = `line-${m. line. replace(/\s/g, '')}`;
+                    const lineClass = `line-${m.line.replace(/\s/g, '')}`;
                     html += `
                         <div class="minute-badge ${lineClass}" onclick="showTooltip(this)">
                             <span class="minute">${m.minute}</span>
@@ -596,19 +596,19 @@
 
         function showTooltip(element) {
             // Zatvori sve otvorene tooltipe
-            document.querySelectorAll('.tooltip. show').forEach(t => t.classList.remove('show'));
+            document.querySelectorAll('.tooltip.show').forEach(t => t.classList.remove('show'));
             // Otvori ovaj
             const tooltip = element.querySelector('.tooltip');
             tooltip.classList.add('show');
             
             // Zatvori nakon 3 sekunde
             setTimeout(() => {
-                tooltip. classList.remove('show');
+                tooltip.classList.remove('show');
             }, 3000);
         }
 
         // Zatvori tooltip klikom bilo gde
-        document. addEventListener('click', function(e) {
+        document.addEventListener('click', function(e) {
             if (! e.target.closest('.minute-badge')) {
                 document.querySelectorAll('.tooltip.show').forEach(t => t.classList.remove('show'));
             }
