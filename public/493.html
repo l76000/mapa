@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Vožnje - BAS ↔ Mladenovac AS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #1e3c72;
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .lines-badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .line-badge {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box label {
+            font-weight: 600;
+            color: #1e3c72;
+            font-size: 16px;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+        }
+
+        .search-box button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .search-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) ! important;
+        }
+
+        .search-results {
+            display: none;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #e3f2fd;
+            border-radius: 8px;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #e3f2fd;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-vehicle {
+            font-weight: 600;
+            color: #1e3c72;
+        }
+
+        .result-count {
+            background: #1e3c72;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .directions-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .directions-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .direction-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .direction-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .direction-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .direction-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .schedule-grid {
+            padding: 15px;
+        }
+
+        .hour-row {
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 10px 0;
+        }
+
+        .hour-row:last-child {
+            border-bottom: none;
+        }
+
+        .hour-cell {
+            width: 50px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e3c72;
+            text-align: center;
+            padding-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .minutes-cell {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .minute-badge {
+            background: #e3f2fd;
+            color: #1e3c72;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+        }
+
+        .minute-badge:hover {
+            background: #1e3c72;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .minute-badge .minute {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .minute-badge .line-tag {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .minute-badge:hover .line-tag {
+            opacity: 1;
+        }
+
+        .minute-badge.highlighted {
+            background: #ffc107;
+            color: #333;
+            animation: pulse 1.5s infinite;
+        }
+
+        .minute-badge.highlighted .line-tag {
+            color: #333;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); }
+        }
+
+        /* Boje za različite linije */
+        .minute-badge.line-493 { border-left: 4px solid #2196F3; }
+        .minute-badge.line-493a { border-left: 4px solid #4CAF50; }
+        .minute-badge.line-493b { border-left: 4px solid #FF9800; }
+        .minute-badge.line-493k { border-left: 4px solid #9C27B0; }
+        .minute-badge.line-493N { border-left: 4px solid #f44336; }
+        .minute-badge.line-499 { border-left: 4px solid #00BCD4; }
+
+        /* Tooltip / Oblačić */
+        .tooltip {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e3c72;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: #1e3c72;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .tooltip-vehicle {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .tooltip-line {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+
+        .legend {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-color.c-493 { background: #2196F3; }
+        .legend-color.c-493a { background: #4CAF50; }
+        .legend-color.c-493b { background: #FF9800; }
+        .legend-color.c-493k { background: #9C27B0; }
+        .legend-color.c-493N { background: #f44336; }
+        .legend-color.c-499 { background: #00BCD4; }
+        .legend-color.c-highlight { background: #ffc107; }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .hour-cell {
+                width: 40px;
+                font-size: 18px;
+            }
+            
+            .minute-badge {
+                padding: 6px 10px;
+                min-width: 45px;
+            }
+            
+            .minute-badge .minute {
+                font-size: 14px;
+            }
+            
+            .minute-badge .line-tag {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Red Vožnje</h1>
+            <p class="subtitle">BAS ↔ Mladenovac AS • Sve linije</p>
+            <div class="lines-badges">
+                <span class="line-badge">493</span>
+                <span class="line-badge">493a</span>
+                <span class="line-badge">493b</span>
+                <span class="line-badge">493k</span>
+                <span class="line-badge">493N</span>
+                <span class="line-badge">499</span>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalDepartures">0</div>
+                    <div class="stat-label">Ukupno polazaka</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalVehicles">0</div>
+                    <div class="stat-label">Vozila</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Linija</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <label for="vehicleSearch">🔍 Pretraga vozila:</label>
+                <input type="text" id="vehicleSearch" placeholder="Unesite broj vozila (npr.P71314)">
+                <button onclick="searchVehicle()">Pretraži</button>
+                <button class="clear-btn" onclick="clearSearch()">Obriši</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <div class="directions-container">
+            <div class="direction-card">
+                <div class="direction-header">
+                    <div class="direction-title">BAS → Mladenovac AS</div>
+                    <div class="direction-subtitle">Polasci sa Beogradske autobuske stanice</div>
+                </div>
+                <div class="schedule-grid" id="schedule-bas">
+                </div>
+            </div>
+
+            <div class="direction-card">
+                <div class="direction-header">
+                    <div class="direction-title">Mladenovac AS → BAS</div>
+                    <div class="direction-subtitle">Polasci sa Mladenovačke autobuske stanice</div>
+                </div>
+                <div class="schedule-grid" id="schedule-mladenovac">
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title">Legenda linija</div>
+            <div class="legend-items">
+                <div class="legend-item"><div class="legend-color c-493"></div><span>493</span></div>
+                <div class="legend-item"><div class="legend-color c-493a"></div><span>493a</span></div>
+                <div class="legend-item"><div class="legend-color c-493b"></div><span>493b</span></div>
+                <div class="legend-item"><div class="legend-color c-493k"></div><span>493k</span></div>
+                <div class="legend-item"><div class="legend-color c-493N"></div><span>493N</span></div>
+                <div class="legend-item"><div class="legend-color c-499"></div><span>499</span></div>
+                <div class="legend-item"><div class="legend-color c-highlight"></div><span>Pretraženo vozilo</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scheduleData = {
+            basToMladenovac: [
+                { time: "04:00", vehicle: "P71314", line: "493" },
+                { time: "04:20", vehicle: "P79465", line: "493" },
+                { time: "04:40", vehicle: "P79459", line: "493" },
+                { time: "04:55", vehicle: "P70605", line: "493" },
+                { time: "05:05", vehicle: "P71317", line: "493" },
+                { time: "05:10", vehicle: "P71319", line: "493" },
+                { time: "05:25", vehicle: "P76436", line: "493" },
+                { time: "05:40", vehicle: "P70606", line: "493" },
+                { time: "06:00", vehicle: "P71314", line: "493" },
+                { time: "06:10", vehicle: "P79461", line: "493" },
+                { time: "06:25", vehicle: "P79465", line: "493" },
+                { time: "06:55", vehicle: "P71304", line: "493" },
+                { time: "07:00", vehicle: "P79404", line: "493" },
+                { time: "07:10", vehicle: "P70605", line: "493" },
+                { time: "07:25", vehicle: "P71310", line: "493" },
+                { time: "07:35", vehicle: "P71317", line: "493" },
+                { time: "07:40", vehicle: "P71319", line: "493" },
+                { time: "08:00", vehicle: "P76436", line: "493" },
+                { time: "08:15", vehicle: "P70606", line: "493" },
+                { time: "08:30", vehicle: "P71314", line: "493" },
+                { time: "08:45", vehicle: "P79461", line: "493" },
+                { time: "09:00", vehicle: "P79465", line: "493" },
+                { time: "09:30", vehicle: "P71304", line: "493" },
+                { time: "09:45", vehicle: "P76435", line: "493" },
+                { time: "10:00", vehicle: "P71310", line: "493" },
+                { time: "10:15", vehicle: "P71319", line: "493" },
+                { time: "10:30", vehicle: "P76436", line: "493" },
+                { time: "10:45", vehicle: "P70606", line: "493" },
+                { time: "11:00", vehicle: "P71314", line: "493" },
+                { time: "11:15", vehicle: "P79461", line: "493" },
+                { time: "11:30", vehicle: "P79465", line: "493" },
+                { time: "12:00", vehicle: "P71304", line: "493" },
+                { time: "12:15", vehicle: "P70605", line: "493" },
+                { time: "12:30", vehicle: "P71310", line: "493" },
+                { time: "12:45", vehicle: "P71319", line: "493" },
+                { time: "12:55", vehicle: "P79414", line: "493" },
+                { time: "13:00", vehicle: "P76436", line: "493" },
+                { time: "13:15", vehicle: "P70606", line: "493" },
+                { time: "13:30", vehicle: "P71314", line: "493" },
+                { time: "13:45", vehicle: "P79461", line: "493" },
+                { time: "14:30", vehicle: "P71304", line: "493" },
+                { time: "14:45", vehicle: "P70605", line: "493" },
+                { time: "15:00", vehicle: "P71310", line: "493" },
+                { time: "15:10", vehicle: "P71317", line: "493" },
+                { time: "15:15", vehicle: "P71319", line: "493" },
+                { time: "15:30", vehicle: "P76436", line: "493" },
+                { time: "15:45", vehicle: "P70606", line: "493" },
+                { time: "16:00", vehicle: "P71314", line: "493" },
+                { time: "16:15", vehicle: "P79461", line: "493" },
+                { time: "16:30", vehicle: "P79465", line: "493" },
+                { time: "16:35", vehicle: "P79466", line: "493" },
+                { time: "17:00", vehicle: "P71304", line: "493" },
+                { time: "17:15", vehicle: "P70605", line: "493" },
+                { time: "17:30", vehicle: "P71310", line: "493" },
+                { time: "17:40", vehicle: "P71317", line: "493" },
+                { time: "17:45", vehicle: "P71319", line: "493" },
+                { time: "18:00", vehicle: "P76436", line: "493" },
+                { time: "18:15", vehicle: "P70606", line: "493" },
+                { time: "18:30", vehicle: "P71314", line: "493" },
+                { time: "18:45", vehicle: "P79461", line: "493" },
+                { time: "19:00", vehicle: "P79465", line: "493" },
+                { time: "19:40", vehicle: "P70605", line: "493" },
+                { time: "20:00", vehicle: "P71310", line: "493" },
+                { time: "20:20", vehicle: "P76436", line: "493" },
+                { time: "20:40", vehicle: "P70606", line: "493" },
+                { time: "21:00", vehicle: "P71317", line: "493" },
+                { time: "21:20", vehicle: "P79465", line: "493" },
+                { time: "22:05", vehicle: "P70605", line: "493" },
+                { time: "22:35", vehicle: "P76436", line: "493" },
+                { time: "23:10", vehicle: "P79462", line: "493" },
+                { time: "23:50", vehicle: "P71317", line: "493" },
+                { time: "03:40", vehicle: "P70606", line: "493b" },
+                { time: "02:30", vehicle: "P71304", line: "493N" },
+                { time: "04:00", vehicle: "P71310", line: "499" },
+                { time: "05:00", vehicle: "P79414", line: "499" },
+                { time: "09:20", vehicle: "P79414", line: "499" },
+                { time: "14:05", vehicle: "P79404", line: "499" },
+                { time: "17:30", vehicle: "P79404", line: "499" },
+                { time: "18:10", vehicle: "P79460", line: "499" }
+            ],
+            mladenovacToBas: [
+                { time: "04:40", vehicle: "P70606", line: "493" },
+                { time: "05:00", vehicle: "P71314", line: "493" },
+                { time: "05:20", vehicle: "P79465", line: "493" },
+                { time: "05:40", vehicle: "P79459", line: "493" },
+                { time: "05:45", vehicle: "P71310", line: "493" },
+                { time: "06:00", vehicle: "P71304", line: "493" },
+                { time: "06:20", vehicle: "P71317", line: "493" },
+                { time: "07:00", vehicle: "P70606", line: "493" },
+                { time: "07:15", vehicle: "P71314", line: "493" },
+                { time: "07:30", vehicle: "P79461", line: "493" },
+                { time: "07:45", vehicle: "P79465", line: "493" },
+                { time: "08:15", vehicle: "P71304", line: "493" },
+                { time: "08:16", vehicle: "P79404", line: "493" },
+                { time: "08:30", vehicle: "P70605", line: "493" },
+                { time: "08:45", vehicle: "P71310", line: "493" },
+                { time: "09:00", vehicle: "P71319", line: "493" },
+                { time: "09:15", vehicle: "P76436", line: "493" },
+                { time: "09:30", vehicle: "P70606", line: "493" },
+                { time: "09:45", vehicle: "P71314", line: "493" },
+                { time: "10:00", vehicle: "P79461", line: "493" },
+                { time: "10:15", vehicle: "P79465", line: "493" },
+                { time: "10:45", vehicle: "P71304", line: "493" },
+                { time: "11:00", vehicle: "P76435", line: "493" },
+                { time: "11:15", vehicle: "P71310", line: "493" },
+                { time: "11:30", vehicle: "P71319", line: "493" },
+                { time: "11:45", vehicle: "P76436", line: "493" },
+                { time: "12:00", vehicle: "P70606", line: "493" },
+                { time: "12:15", vehicle: "P71314", line: "493" },
+                { time: "12:30", vehicle: "P79461", line: "493" },
+                { time: "12:45", vehicle: "P79465", line: "493" },
+                { time: "13:15", vehicle: "P71304", line: "493" },
+                { time: "13:30", vehicle: "P70605", line: "493" },
+                { time: "13:45", vehicle: "P71310", line: "493" },
+                { time: "14:00", vehicle: "P71319", line: "493" },
+                { time: "14:10", vehicle: "P79414", line: "493" },
+                { time: "14:15", vehicle: "P76436", line: "493" },
+                { time: "14:30", vehicle: "P70606", line: "493" },
+                { time: "14:45", vehicle: "P71314", line: "493" },
+                { time: "15:00", vehicle: "P79461", line: "493" },
+                { time: "15:45", vehicle: "P71304", line: "493" },
+                { time: "16:00", vehicle: "P70605", line: "493" },
+                { time: "16:15", vehicle: "P71310", line: "493" },
+                { time: "16:25", vehicle: "P71317", line: "493" },
+                { time: "16:30", vehicle: "P71319", line: "493" },
+                { time: "16:45", vehicle: "P76436", line: "493" },
+                { time: "17:00", vehicle: "P70606", line: "493" },
+                { time: "17:15", vehicle: "P71314", line: "493" },
+                { time: "17:30", vehicle: "P79461", line: "493" },
+                { time: "17:45", vehicle: "P79465", line: "493" },
+                { time: "17:55", vehicle: "P79466", line: "493" },
+                { time: "18:15", vehicle: "P71304", line: "493" },
+                { time: "18:30", vehicle: "P70605", line: "493" },
+                { time: "18:45", vehicle: "P71310", line: "493" },
+                { time: "18:55", vehicle: "P71317", line: "493" },
+                { time: "19:00", vehicle: "P71319", line: "493" },
+                { time: "19:15", vehicle: "P76436", line: "493" },
+                { time: "19:20", vehicle: "P79404", line: "493" },
+                { time: "19:30", vehicle: "P70606", line: "493" },
+                { time: "19:45", vehicle: "P71314", line: "493" },
+                { time: "20:00", vehicle: "P79461", line: "493" },
+                { time: "20:15", vehicle: "P79465", line: "493" },
+                { time: "20:50", vehicle: "P70605", line: "493" },
+                { time: "21:10", vehicle: "P71310", line: "493" },
+                { time: "21:50", vehicle: "P70606", line: "493" },
+                { time: "22:30", vehicle: "P79465", line: "493" },
+                { time: "23:45", vehicle: "P76436", line: "493" },
+                { time: "00:15", vehicle: "P71317", line: "493a" },
+                { time: "00:15", vehicle: "P79462", line: "493a" },
+                { time: "06:25", vehicle: "P71319", line: "493b" },
+                { time: "06:40", vehicle: "P76436", line: "493b" },
+                { time: "15:10", vehicle: "P79465", line: "493b" },
+                { time: "21:30", vehicle: "P76436", line: "493b" },
+                { time: "22:15", vehicle: "P71317", line: "493b" },
+                { time: "23:15", vehicle: "P70605", line: "493b" },
+                { time: "04:25", vehicle: "P71308", line: "493k" },
+                { time: "04:45", vehicle: "P71300", line: "493k" },
+                { time: "04:50", vehicle: "P71303", line: "493k" },
+                { time: "05:00", vehicle: "P71301", line: "493k" },
+                { time: "05:15", vehicle: "P70515", line: "493k" },
+                { time: "05:20", vehicle: "P71305", line: "493k" },
+                { time: "05:35", vehicle: "P71313", line: "493k" },
+                { time: "05:45", vehicle: "P71309", line: "493k" },
+                { time: "05:50", vehicle: "P71306", line: "493k" },
+                { time: "06:05", vehicle: "P71312", line: "493k" },
+                { time: "06:15", vehicle: "P71316", line: "493k" },
+                { time: "06:20", vehicle: "P71308", line: "493k" },
+                { time: "06:30", vehicle: "P71318", line: "493k" },
+                { time: "06:35", vehicle: "P71300", line: "493k" },
+                { time: "06:45", vehicle: "P79422", line: "493k" },
+                { time: "06:50", vehicle: "P71303", line: "493k" },
+                { time: "07:05", vehicle: "P71301", line: "493k" },
+                { time: "07:15", vehicle: "P70515", line: "493k" },
+                { time: "07:20", vehicle: "P71305", line: "493k" },
+                { time: "07:30", vehicle: "P71313", line: "493k" },
+                { time: "07:35", vehicle: "P76435", line: "493k" },
+                { time: "07:40", vehicle: "P71309", line: "493k" },
+                { time: "07:55", vehicle: "P71306", line: "493k" },
+                { time: "08:05", vehicle: "P71312", line: "493k" },
+                { time: "08:10", vehicle: "P79466", line: "493k" },
+                { time: "08:25", vehicle: "P71308", line: "493k" },
+                { time: "08:40", vehicle: "P71300", line: "493k" },
+                { time: "08:50", vehicle: "P79422", line: "493k" },
+                { time: "08:55", vehicle: "P71303", line: "493k" },
+                { time: "09:10", vehicle: "P70515", line: "493k" },
+                { time: "09:10", vehicle: "P71316", line: "493k" },
+                { time: "09:25", vehicle: "P71305", line: "493k" },
+                { time: "09:35", vehicle: "P71313", line: "493k" },
+                { time: "09:40", vehicle: "P71309", line: "493k" },
+                { time: "09:55", vehicle: "P71306", line: "493k" },
+                { time: "10:05", vehicle: "P71312", line: "493k" },
+                { time: "10:10", vehicle: "P71316", line: "493k" },
+                { time: "10:25", vehicle: "P71308", line: "493k" },
+                { time: "10:40", vehicle: "P71300", line: "493k" },
+                { time: "10:55", vehicle: "P71303", line: "493k" },
+                { time: "11:10", vehicle: "P70515", line: "493k" },
+                { time: "11:25", vehicle: "P71305", line: "493k" },
+                { time: "11:35", vehicle: "P71313", line: "493k" },
+                { time: "11:40", vehicle: "P71309", line: "493k" },
+                { time: "11:50", vehicle: "P71306", line: "493k" },
+                { time: "12:05", vehicle: "P71312", line: "493k" },
+                { time: "12:10", vehicle: "P71316", line: "493k" },
+                { time: "12:20", vehicle: "P71308", line: "493k" },
+                { time: "12:35", vehicle: "P71318", line: "493k" },
+                { time: "12:40", vehicle: "P71300", line: "493k" },
+                { time: "12:50", vehicle: "P71303", line: "493k" },
+                { time: "13:05", vehicle: "P71301", line: "493k" },
+                { time: "13:20", vehicle: "P71305", line: "493k" },
+                { time: "13:35", vehicle: "P71313", line: "493k" },
+                { time: "13:40", vehicle: "P71309", line: "493k" },
+                { time: "13:50", vehicle: "P71306", line: "493k" },
+                { time: "14:05", vehicle: "P71312", line: "493k" },
+                { time: "14:10", vehicle: "P71316", line: "493k" },
+                { time: "14:20", vehicle: "P71308", line: "493k" },
+                { time: "14:35", vehicle: "P71318", line: "493k" },
+                { time: "14:40", vehicle: "P71300", line: "493k" },
+                { time: "14:50", vehicle: "P71303", line: "493k" },
+                { time: "15:05", vehicle: "P71301", line: "493k" },
+                { time: "15:10", vehicle: "P70515", line: "493k" },
+                { time: "15:20", vehicle: "P71305", line: "493k" },
+                { time: "15:35", vehicle: "P71313", line: "493k" },
+                { time: "15:50", vehicle: "P71306", line: "493k" },
+                { time: "16:05", vehicle: "P71312", line: "493k" },
+                { time: "16:10", vehicle: "P71316", line: "493k" },
+                { time: "16:20", vehicle: "P71308", line: "493k" },
+                { time: "16:35", vehicle: "P71318", line: "493k" },
+                { time: "16:40", vehicle: "P71300", line: "493k" },
+                { time: "16:50", vehicle: "P71303", line: "493k" },
+                { time: "17:05", vehicle: "P71301", line: "493k" },
+                { time: "17:10", vehicle: "P70515", line: "493k" },
+                { time: "17:20", vehicle: "P71305", line: "493k" },
+                { time: "17:35", vehicle: "P71313", line: "493k" },
+                { time: "17:40", vehicle: "P71309", line: "493k" },
+                { time: "18:05", vehicle: "P71312", line: "493k" },
+                { time: "18:10", vehicle: "P71316", line: "493k" },
+                { time: "18:20", vehicle: "P71308", line: "493k" },
+                { time: "18:35", vehicle: "P71318", line: "493k" },
+                { time: "18:40", vehicle: "P71300", line: "493k" },
+                { time: "18:50", vehicle: "P71306", line: "493k" },
+                { time: "18:50", vehicle: "P71303", line: "493k" },
+                { time: "19:05", vehicle: "P71301", line: "493k" },
+                { time: "19:10", vehicle: "P70515", line: "493k" },
+                { time: "19:25", vehicle: "P71305", line: "493k" },
+                { time: "19:30", vehicle: "P71313", line: "493k" },
+                { time: "19:45", vehicle: "P71309", line: "493k" },
+                { time: "19:50", vehicle: "P71306", line: "493k" },
+                { time: "20:05", vehicle: "P71312", line: "493k" },
+                { time: "20:10", vehicle: "P71316", line: "493k" },
+                { time: "20:35", vehicle: "P71318", line: "493k" },
+                { time: "01:30", vehicle: "P79414", line: "493N" },
+                { time: "06:50", vehicle: "P79414", line: "499" },
+                { time: "08:50", vehicle: "P71317", line: "499" },
+                { time: "11:10", vehicle: "P79414", line: "499" },
+                { time: "13:15", vehicle: "P79422", line: "499" },
+                { time: "15:45", vehicle: "P79404", line: "499" },
+                { time: "20:15", vehicle: "P79460", line: "499" }
+            ]
+        };
+
+        // Uklanjanje duplikata
+        function removeDuplicates(data) {
+            const seen = new Set();
+            return data.filter(dep => {
+                const key = `${dep.time}-${dep.vehicle}-${dep.line}`;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
+        }
+
+        scheduleData.basToMladenovac = removeDuplicates(scheduleData.basToMladenovac);
+        scheduleData.mladenovacToBas = removeDuplicates(scheduleData.mladenovacToBas);
+
+        let activeTooltip = null;
+
+        // Generisanje reda vožnje
+        function generateSchedule(containerId, data, direction) {
+            const container = document.getElementById(containerId);
+            
+            const hourlyData = {};
+            data.forEach(dep => {
+                const [hour, minute] = dep.time.split(':');
+                if (!hourlyData[hour]) {
+                    hourlyData[hour] = [];
+                }
+                hourlyData[hour].push({ minute, vehicle: dep.vehicle, line: dep.line });
+            });
+
+            const sortedHours = Object.keys(hourlyData).sort((a, b) => {
+                const hourA = parseInt(a);
+                const hourB = parseInt(b);
+                const adjustedA = hourA < 4 ? hourA + 24 : hourA;
+                const adjustedB = hourB < 4 ? hourB + 24 : hourB;
+                return adjustedA - adjustedB;
+            });
+
+            let html = '';
+            sortedHours.forEach(hour => {
+                const minutes = hourlyData[hour].sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
+                html += `
+                    <div class="hour-row">
+                        <div class="hour-cell">${hour}</div>
+                        <div class="minutes-cell">
+                            ${minutes.map(m => `
+                                <span class="minute-badge line-${m.line.replace(/\s/g, '')}" 
+                                      data-time="${hour}:${m.minute}" 
+                                      data-vehicle="${m.vehicle}"
+                                      data-line="${m.line}"
+                                      data-direction="${direction}"
+                                      onclick="toggleTooltip(event, this)">
+                                    <span class="minute">${m.minute}</span>
+                                    <span class="line-tag">${m.line}</span>
+                                    <div class="tooltip">
+                                        <div class="tooltip-vehicle">🚌 ${m.vehicle}</div>
+                                        <div class="tooltip-line">Linija ${m.line}</div>
+                                    </div>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Statistike
+        function updateStats() {
+            const totalDepartures = scheduleData.basToMladenovac.length + scheduleData.mladenovacToBas.length;
+            document.getElementById('totalDepartures').textContent = totalDepartures;
+
+            const allVehicles = new Set();
+            [...scheduleData.basToMladenovac, ...scheduleData.mladenovacToBas].forEach(dep => {
+                allVehicles.add(dep.vehicle);
+            });
+            document.getElementById('totalVehicles').textContent = allVehicles.size;
+        }
+
+        // Toggle tooltip
+        function toggleTooltip(event, element) {
+            event.stopPropagation();
+            
+            const tooltip = element.querySelector('.tooltip');
+            
+            // Zatvori prethodni tooltip
+            if (activeTooltip && activeTooltip !== tooltip) {
+                activeTooltip.classList.remove('show');
+            }
+            
+            // Toggle trenutni
+            tooltip.classList.toggle('show');
+            activeTooltip = tooltip.classList.contains('show') ? tooltip : null;
+        }
+
+        // Zatvori tooltip klikom bilo gde
+        document.addEventListener('click', function(e) {
+            if (activeTooltip && ! e.target.closest('.minute-badge')) {
+                activeTooltip.classList.remove('show');
+                activeTooltip = null;
+            }
+        });
+
+        // Pretraga vozila
+        function searchVehicle() {
+            const query = document.getElementById('vehicleSearch').value.trim().toUpperCase();
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (!query) {
+                resultsContainer.classList.remove('show');
+                return;
+            }
+
+            const allVehicles = new Map();
+            
+            [...scheduleData.basToMladenovac, ...scheduleData.mladenovacToBas].forEach(dep => {
+                if (dep.vehicle.toUpperCase().includes(query)) {
+                    if (!allVehicles.has(dep.vehicle)) {
+                        allVehicles.set(dep.vehicle, 0);
+                    }
+                    allVehicles.set(dep.vehicle, allVehicles.get(dep.vehicle) + 1);
+                }
+            });
+
+            if (allVehicles.size === 0) {
+                resultsContainer.innerHTML = '<div class="search-result-item"><span>Vozilo nije pronađeno</span></div>';
+                resultsContainer.classList.add('show');
+                return;
+            }
+
+            const sortedVehicles = [...allVehicles.entries()].sort((a, b) => b[1] - a[1]);
+
+            let html = '';
+            sortedVehicles.forEach(([vehicle, count]) => {
+                html += `
+                    <div class="search-result-item" onclick="highlightVehicle('${vehicle}')">
+                        <span class="result-vehicle">🚌 ${vehicle}</span>
+                        <span class="result-count">${count} polazaka</span>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+            resultsContainer.classList.add('show');
+        }
+
+        // Označavanje polazaka vozila
+        function highlightVehicle(vehicle) {
+            document.querySelectorAll('.minute-badge').forEach(b => {
+                b.classList.remove('highlighted');
+            });
+
+            document.querySelectorAll('.minute-badge').forEach(b => {
+                if (b.dataset.vehicle === vehicle) {
+                    b.classList.add('highlighted');
+                }
+            });
+
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('vehicleSearch').value = vehicle;
+        }
+
+        function clearSearch() {
+            document.getElementById('vehicleSearch').value = '';
+            document.getElementById('searchResults').classList.remove('show');
+            document.querySelectorAll('.minute-badge').forEach(b => {
+                b.classList.remove('highlighted');
+            });
+        }
+
+        // Enter za pretragu
+        document.getElementById('vehicleSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchVehicle();
+        });
+
+        // Live pretraga
+        document.getElementById('vehicleSearch').addEventListener('input', function() {
+            if (this.value.length >= 2) {
+                searchVehicle();
+            } else {
+                document.getElementById('searchResults').classList.remove('show');
+            }
+        });
+
+        // Inicijalizacija
+        generateSchedule('schedule-bas', scheduleData.basToMladenovac, 'BAS → Mladenovac AS');
+        generateSchedule('schedule-mladenovac', scheduleData.mladenovacToBas, 'Mladenovac AS → BAS');
+        updateStats();
+    </script>
+</body>
+</html>
