@@ -229,7 +229,7 @@ if (isNightTime && isLateEvening) {
             addSheet: {
               properties: {
                 title: sheetName,
-                gridProperties: { rowCount: 10000, columnCount: 10 }
+                gridProperties: { rowCount: 60000, columnCount: 10 }
               }
             }
           }]
