@@ -461,11 +461,15 @@ export default function handler(req, res) {
 
                     const vehicleDestinations = {};
                     vehicleShapeMap = {};
+                    const vehicleDelays = {};
                     
                     data.tripUpdates.forEach(update => {
                         vehicleDestinations[update.vehicleId] = update.destination;
                         if (update.shapeId) {
                             vehicleShapeMap[update.vehicleId] = update.shapeId;
+                        }
+                        if (update.delay !== undefined) {
+                            vehicleDelays[update.vehicleId] = update.delay;
                         }
                     });
                     
@@ -498,7 +502,7 @@ export default function handler(req, res) {
                     console.log('Vehicle Destinations:', vehicleDestinations);
                     
                     drawAllRoutes(vehicleDestinations);
-                    crtajVozila(data.vehicles, vehicleDestinations);
+                    crtajVozila(data.vehicles, vehicleDestinations, vehicleDelays);
                     
                     const timeStr = new Date().toLocaleTimeString();
                     document.getElementById('statusText').innerHTML = \`Ažurirano: <b>\${timeStr}</b>\`;
@@ -513,7 +517,7 @@ export default function handler(req, res) {
             startTimer(refreshTime);
         }
  
-        function crtajVozila(vehicles, vehicleDestinations) {
+        function crtajVozila(vehicles, vehicleDestinations, vehicleDelays) {
             busLayer.clearLayers();
             destinationLayer.clearLayers();
  
@@ -531,11 +535,34 @@ export default function handler(req, res) {
                 const route = normalizeRouteId(v.routeId);
                 const vehicleId = v.id;
                 
-                const destId = vehicleDestinations[vehicleId] || "Unknown";
-                
+                const destId = vehicleDestinations[id] || "Unknown";
                 const normalizedId = normalizeStopId(destId);
-                const uniqueDirKey = \`\${route}_\${destId}\`;
+                const station = stationsMap[normalizedId];
+                const destName = station ? station.name : destId;
                 
+                const delay = vehicleDelays[id];
+                let delayText = '';
+                
+                if (delay !== undefined) {
+                    const absDelay = Math.abs(delay);
+                    let delayDisplay = '';
+                    
+                    if (absDelay >= 60) {
+                        const minutes = Math.floor(absDelay / 60);
+                        const seconds = absDelay % 60;
+                        delayDisplay = `${minutes}m ${seconds}s`;
+                    } else {
+                        delayDisplay = `${absDelay}s`;
+                    }
+                    
+                    if (delay < 0) {
+                        delayText = `<div class="popup-row"><span class="popup-label">Kašnjenje po turaži:</span> <span style="color:#27ae60; font-weight:bold;">${delayDisplay} - stiže ranije</span></div>`;
+                    } else {
+                        delayText = `<div class="popup-row"><span class="popup-label">Kašnjenje po turaži:</span> <span style="color:#e74c3c; font-weight:bold;">${delayDisplay}</span></div>`;
+                    }
+                }
+                
+                const uniqueDirKey = `${route}_${destId}`;
                 const color = directionColorMap[uniqueDirKey];
                 
                 destinations.add(destId);
@@ -625,15 +652,16 @@ export default function handler(req, res) {
                     iconAnchor: [25, 28]
                 });
  
-                const popupContent = \`
+                const popupContent = `
                     <div class="popup-content">
-                        <div class="popup-row"><span class="popup-label">Linija:</span> <b>\${routeDisplayName}</b></div>
-                        <div class="popup-row"><span class="popup-label">Garažni:</span> \${label}</div>
+                        <div class="popup-row"><span class="popup-label">Linija:</span> <b>${routeDisplayName}</b></div>
+                        <div class="popup-row"><span class="popup-label">Garažni:</span> ${label}</div>
                         <hr style="margin: 5px 0; border-color:#eee;">
-                        <div class="popup-row"><span class="popup-label">Polazak:</span> <b>\${startTime}</b></div>
-                        <div class="popup-row"><span class="popup-label">Smer (ide ka):</span> <span style="color:\${color}; font-weight:bold;">\${destName}</span></div>
+                        <div class="popup-row"><span class="popup-label">Polazak:</span> <b>${startTime}</b></div>
+                        <div class="popup-row"><span class="popup-label">Smer (ide ka):</span> <span style="color:${color}; font-weight:bold;">${destName}</span></div>
+                        ${delayText}
                     </div>
-                \`;
+                `;
  
                 L.marker([lat, lon], {icon: icon})
                     .bindPopup(popupContent)
