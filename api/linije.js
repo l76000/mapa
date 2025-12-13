@@ -472,6 +472,9 @@ export default function handler(req, res) {
                             vehicleDelays[update.vehicleId] = update.delay;
                         }
                     });
+
+                    console.log('🔍 Sample tripUpdate:', data.tripUpdates[0]);
+console.log('📊 Vehicle Delays:', vehicleDelays);
                     
                     const vozila = data.vehicles.filter(v => {
                         const routeId = normalizeRouteId(v.routeId);
