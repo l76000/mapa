@@ -1,10 +1,5 @@
 export default async function handler(req, res) {
-  const isAuthenticated = req.session?.user || req.cookies?.authToken;
-  
-  if (!isAuthenticated) {
-    return res.status(401).json({ error: 'Unauthorized' }); // Vrati JSON grešku
-  }
-
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   res.setHeader('Content-Type', 'application/json');
 
@@ -71,7 +66,6 @@ export default async function handler(req, res) {
       }
 
       // Process trip updates
-      // Process trip updates
       if (entitet.tripUpdate && entitet.tripUpdate.trip && 
           entitet.tripUpdate.stopTimeUpdate && entitet.tripUpdate.vehicle) {
         const updates = entitet.tripUpdate.stopTimeUpdate;
@@ -79,21 +73,13 @@ export default async function handler(req, res) {
 
         if (updates.length > 0 && vehicleId) {
           const lastStopId = updates[updates.length - 1].stopId;
-          
-          // Extract delay from first stop
-          let delay = undefined;
-          if (updates[0].arrival && updates[0].arrival.delay !== undefined) {
-            delay = updates[0].arrival.delay;
-          }
-          
           tripUpdates.push({
             vehicleId: vehicleId,
-            destination: lastStopId,
-            delay: delay
+            destination: lastStopId
           });
         }
       }
-      });
+    });
 
     res.status(200).json({
       vehicles: vehicles,
