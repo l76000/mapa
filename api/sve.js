@@ -1,4 +1,10 @@
 export default function handler(req, res) {
+  const isAuthenticated = req.session?.user || req.cookies?.authToken;
+  
+  if (!isAuthenticated) {
+    return res.redirect(307, '/login'); // Preusmeri na login
+  }
+
   const html = `
 <!DOCTYPE html>
 <html lang="sr">
