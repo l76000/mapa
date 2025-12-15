@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "googleapis": "^128.0.0"
+	"hono": "^4.6.4"
   },
   "engines": {
     "node": ">=18.x"
