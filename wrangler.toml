@@ -1,14 +1,16 @@
-name = "mapabus"
-compatibility_date = "2025-12-15"
-compatibility_flags = ["nodejs_compat"]  # Za googleapis i Node feature-e
+name = "mapa"  # Promeni u "mapa" da match-uje project name
 
-main = "src/index.js"  # Entry za Worker
+compatibility_date = "2025-12-15"
+compatibility_flags = ["nodejs_compat"]  # Ostavi, za googleapis
+
+main = "src/index.js"
 
 [site]
-bucket = "./public"  # Static assets dir (dodaj root fajlove poput index.html ako treba u public/)
+bucket = "./public"
+
+kv_namespaces = [
+  { binding = "__STATIC_CONTENT", id = "8d71fb266b4e4ff49accde601f8b9a1c" }  # Koristi stari ID ili novi; dodaj preview_id ako imaš
+]
 
 [vars]
-# Dodaj non-secret env vars ovde, npr.
-GOOGLE_SPREADSHEET_ID = "your-sheet-id"
-
-# Za secrets (kao GOOGLE_SHEETS_PRIVATE_KEY), koristi `wrangler secret put GOOGLE_SHEETS_PRIVATE_KEY` kasnije
+GOOGLE_SPREADSHEET_ID = "1Id1YjekUHdiWRhAakmYjrqqitufsAwBlYNvXsE9VPak"
