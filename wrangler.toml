@@ -1,7 +1,7 @@
-name = "mapa"  # Promeni u "mapa" da match-uje project name
+name = "mapa"
 
 compatibility_date = "2025-12-15"
-compatibility_flags = ["nodejs_compat"]  # Ostavi, za googleapis
+compatibility_flags = ["nodejs_compat"]
 
 main = "src/index.js"
 
@@ -9,7 +9,7 @@ main = "src/index.js"
 bucket = "./public"
 
 kv_namespaces = [
-  { binding = "__STATIC_CONTENT", id = "8d71fb266b4e4ff49accde601f8b9a1c" }  # Koristi stari ID ili novi; dodaj preview_id ako imaš
+  { binding = "__STATIC_CONTENT", id = "8d71fb266b4e4ff49accde601f8b9a1c" }
 ]
 
 [vars]
